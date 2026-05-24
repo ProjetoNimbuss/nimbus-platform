@@ -1,15 +1,41 @@
 version: 2
 
 models:
+  - name: mapeamento_estacoes
+    description: "Tabela dimensão de estações (CEMADEN) mapeadas para os municípios correspondentes do IBGE com coordenadas geográficas."
+    columns:
+      - name: estacao_codigo
+        tests:
+          - unique
+          - not_null
+      - name: nome_estacao
+        tests:
+          - not_null
+      - name: municipio_nome
+        tests:
+          - not_null
+      - name: codigo_ibge
+        tests:
+          - not_null
+      - name: latitude
+        tests:
+          - not_null
+      - name: longitude
+        tests:
+          - not_null
+
   - name: monitoramento_pluviometrico
     description: "Modelo silver consolidado contendo histórico diário de chuvas por posto da APAC enriquecido com dados do IBGE, coordenadas e alertas."
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
-            - codigo_posto
+            - codigo_estacao
             - data
     columns:
-      - name: codigo_posto
+      - name: codigo_estacao
+        tests:
+          - not_null
+      - name: nome_estacao
         tests:
           - not_null
       - name: data
@@ -24,6 +50,19 @@ models:
       - name: dia
         tests:
           - not_null
+      - name: municipio
+        tests:
+          - not_null
+      - name: mesorregiao
+        tests:
+          - not_null
+      - name: precipitacao_mm
+        description: "Precipitação diária em mm. NULL indica dia sem dado disponível (normal para dias secos)."
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: true
       - name: periodo_clima
         tests:
           - not_null

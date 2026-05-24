@@ -23,3 +23,4 @@ models:
       +materialized: table
     gold:
       +materialized: view
+      +schema: gold

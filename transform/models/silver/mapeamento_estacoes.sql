@@ -10,7 +10,7 @@ WITH fonte_api AS (
   -- Lê todos os arquivos Parquet da coleta de 15 minutos
   SELECT
     codigo_gmmc,
-    UPPER(TRIM(cidade)) AS municipio_nome,
+    cidade,
     nome_estacao,
     latitude,
     longitude,
@@ -19,13 +19,12 @@ WITH fonte_api AS (
       ORDER BY data_hora DESC
     ) AS rn
   FROM {{ ref('brz_api_cemaden') }}
-  WHERE cidade IS NOT NULL
 ),
 
 estacoes_dedup AS (
   SELECT
     codigo_gmmc,
-    municipio_nome,
+    cidade,
     nome_estacao,
     latitude,
     longitude
@@ -35,12 +34,18 @@ estacoes_dedup AS (
 
 SELECT
   e.codigo_gmmc AS estacao_codigo,
-  e.nome_estacao,
-  e.municipio_nome,
+  COALESCE(NULLIF(TRIM(e.nome_estacao), ''), 'Estação ' || e.codigo_gmmc) AS nome_estacao,
+  COALESCE(NULLIF(UPPER(TRIM(e.cidade)), 'NAN'), UPPER(TRIM(ibge.municipio))) AS municipio_nome,
   ibge.codigo_ibge,
-  e.latitude,
-  e.longitude,
+  CASE 
+    WHEN e.latitude IS NULL OR isnan(e.latitude) THEN ibge.latitude 
+    ELSE e.latitude 
+  END AS latitude,
+  CASE 
+    WHEN e.longitude IS NULL OR isnan(e.longitude) THEN ibge.longitude 
+    ELSE e.longitude 
+  END AS longitude,
   CURRENT_TIMESTAMP AS atualizado_em
 FROM estacoes_dedup e
 LEFT JOIN {{ ref('stg_ibge_municipios_pe') }} ibge
-  ON e.municipio_nome = UPPER(TRIM(ibge.municipio))
+  ON SUBSTR(e.codigo_gmmc, 1, 7) = CAST(ibge.codigo_ibge AS VARCHAR)

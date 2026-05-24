@@ -83,3 +83,14 @@ include/pipeline/extract/scraper.log
 transform/target/
 transform/dbt_packages/
 transform/logs/
+
+# Dados locais (segurança extra)
+*.parquet
+
+# DuckDB local e temporários
+*.duckdb
+*.duckdb.wal
+*.tmp/
+
+# Documentação local (ADRs, Runbooks — não versionado)
+docs/

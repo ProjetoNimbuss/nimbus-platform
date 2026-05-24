@@ -19,7 +19,19 @@ distinct_postos AS (
   SELECT DISTINCT
     codigo_posto,
     nome_posto,
-    {{ clean_string('nome_posto') }} as nome_posto_limpo
+    CASE 
+      WHEN {{ clean_string('nome_posto') }} LIKE 'BELEM DE SAO FRANCISCO%' THEN 'BELEM DO SAO FRANCISCO'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'IGUARACI%' THEN 'IGUARACY'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'CABO%' THEN 'CABO DE SANTO AGOSTINHO'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'SAO CAETANO%' THEN 'SAO CAITANO'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'LAGOA DO ITAENGA%' THEN 'LAGOA DE ITAENGA'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'BREJO MADRE DE DEUS%' THEN 'BREJO DA MADRE DE DEUS'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'SAO LOURENCO MATA%' THEN 'SAO LOURENCO DA MATA'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'PALMERINA%' THEN 'PALMEIRINA'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'ITAMARACA%' THEN 'ILHA DE ITAMARACA'
+      WHEN {{ clean_string('nome_posto') }} LIKE 'JABOATAO%' THEN 'JABOATAO DOS GUARARAPES'
+      ELSE {{ clean_string('nome_posto') }}
+    END AS nome_posto_limpo
   FROM {{ source('bronze', 'monitoramento_pluviometrico') }}
 ),
 
@@ -92,8 +104,8 @@ mapeamento_final AS (
 
 dados_base AS (
   SELECT
-    m.codigo_posto,
-    m.nome_posto,
+    m.codigo_posto AS codigo_estacao,
+    m.nome_posto AS nome_estacao,
     m.data,
     EXTRACT(YEAR FROM m.data) AS ano,
     EXTRACT(MONTH FROM m.data) AS mes,
@@ -107,8 +119,16 @@ dados_base AS (
       WHEN 5 THEN 'Sexta-feira'
       WHEN 6 THEN 'Sábado'
     END AS dia_semana,
-    m.precipitacao,
+    CASE WHEN m.precipitacao < 0 THEN NULL ELSE m.precipitacao END AS precipitacao_mm,
     m.mesorregiao_id,
+    CASE m.mesorregiao_id
+      WHEN 2605 THEN 'Metropolitana de Recife'
+      WHEN 2604 THEN 'Zona da Mata'
+      WHEN 2603 THEN 'Agreste'
+      WHEN 2602 THEN 'Sertão do São Francisco'
+      WHEN 2601 THEN 'Sertão'
+      ELSE 'Desconhecida'
+    END AS mesorregiao,
     CASE
       WHEN m.mesorregiao_id IN (2601, 2602) THEN
         CASE WHEN EXTRACT(MONTH FROM m.data) BETWEEN 1 AND 4 THEN 'Chuvoso' ELSE 'Seco' END
@@ -116,7 +136,7 @@ dados_base AS (
         CASE WHEN EXTRACT(MONTH FROM m.data) BETWEEN 4 AND 8 THEN 'Chuvoso' ELSE 'Seco' END
       ELSE 'Desconhecido'
     END AS periodo_clima,
-    map.municipio_inferido,
+    map.municipio_inferido AS municipio,
     map.latitude,
     map.longitude,
     map.tipo_match
@@ -128,36 +148,37 @@ dados_base AS (
 dados_com_ilhas AS (
   SELECT
     *,
-    SUM(CASE WHEN COALESCE(precipitacao, 0) > 0 THEN 1 ELSE 0 END)
-      OVER (PARTITION BY codigo_posto ORDER BY data) as island_id
+    SUM(CASE WHEN COALESCE(precipitacao_mm, 0) > 0 THEN 1 ELSE 0 END)
+      OVER (PARTITION BY codigo_estacao ORDER BY data) as island_id
   FROM dados_base
 )
 
 SELECT
-  codigo_posto,
-  nome_posto,
+  codigo_estacao,
+  nome_estacao,
   data,
   ano,
   mes,
   dia,
   dia_semana,
-  precipitacao,
+  precipitacao_mm,
   mesorregiao_id,
+  mesorregiao,
   periodo_clima,
-  municipio_inferido,
+  municipio,
   latitude,
   longitude,
   tipo_match,
   CASE
-    WHEN COALESCE(precipitacao, 0) < 20 THEN 'Normal'
-    WHEN COALESCE(precipitacao, 0) >= 20 AND COALESCE(precipitacao, 0) < 50 THEN 'Perigo Potencial'
-    WHEN COALESCE(precipitacao, 0) >= 50 AND COALESCE(precipitacao, 0) <= 100 THEN 'Perigo'
+    WHEN COALESCE(precipitacao_mm, 0) < 20 THEN 'Normal'
+    WHEN COALESCE(precipitacao_mm, 0) >= 20 AND COALESCE(precipitacao_mm, 0) < 50 THEN 'Perigo Potencial'
+    WHEN COALESCE(precipitacao_mm, 0) >= 50 AND COALESCE(precipitacao_mm, 0) <= 100 THEN 'Perigo'
     ELSE 'Grande Perigo'
   END AS alerta_chuva,
   CASE
-    WHEN COALESCE(precipitacao, 0) = 0 THEN
-      ROW_NUMBER() OVER (PARTITION BY codigo_posto, island_id ORDER BY data)
+    WHEN COALESCE(precipitacao_mm, 0) = 0 THEN
+      ROW_NUMBER() OVER (PARTITION BY codigo_estacao, island_id ORDER BY data)
     ELSE 0
   END AS dias_secos_consecutivos,
-  AVG(precipitacao) OVER (PARTITION BY codigo_posto ORDER BY data ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS mm_7d
+  AVG(precipitacao_mm) OVER (PARTITION BY codigo_estacao ORDER BY data ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS mm_7d
 FROM dados_com_ilhas
