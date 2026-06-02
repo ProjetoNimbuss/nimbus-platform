@@ -1,6 +1,61 @@
 version: 2
 
 models:
+  - name: qualidade_estacoes
+    description: >
+      Perfil de qualidade de dados por estação pluviométrica, computado sobre
+      todo o histórico disponível (1961 → hoje). Indica confiabilidade para uso
+      em análises e dashboards.
+    columns:
+      - name: codigo_estacao
+        tests:
+          - unique
+          - not_null
+      - name: nome_estacao
+        tests:
+          - not_null
+      - name: municipio
+        tests:
+          - not_null
+      - name: mesorregiao
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'Metropolitana de Recife'
+                - 'Zona da Mata'
+                - 'Agreste'
+                - 'Sertão do São Francisco'
+                - 'Sertão'
+      - name: total_registros
+        tests:
+          - not_null
+      - name: registros_validos
+        tests:
+          - not_null
+      - name: registros_nulos
+        tests:
+          - not_null
+      - name: score_confianca
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: categoria_qualidade
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['alta', 'media', 'baixa']
+      - name: estacao_confiavel
+        tests:
+          - not_null
+      - name: atualizado_em
+        tests:
+          - not_null
+
+
   - name: agregados_anuais
     description: >
       Agregados anuais de precipitação por estação. Inclui total anual,
