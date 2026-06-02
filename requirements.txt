@@ -12,7 +12,7 @@ pyarrow>=14.0
 lxml>=5.0
 
 # Transformação (dbt)
-dbt-duckdb>=1.8.0
+dbt-duckdb>=1.10.0
 
 # Orquestração (Airflow via Astro CLI)
 # apache-airflow>=2.9
