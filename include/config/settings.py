@@ -22,6 +22,6 @@ BASE_URL = os.getenv("APAC_BASE_URL", "http://old.apac.pe.gov.br/meteorologia/mo
 # Certifique-se de que os diretórios existem
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-# URL API IBGE 
+# URL API IBGE
 
 URL_API_IBGE = "https://servicodados.ibge.gov.br/api/v1/localidades/estados/26/municipios"

@@ -4,7 +4,7 @@ import requests
 
 DB_PATH = "include/data/pepluvi.duckdb"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-HEADERS = {"User-Agent": "PEPluvi/1.0"} 
+HEADERS = {"User-Agent": "PEPluvi/1.0"}
 
 def get_coords(municipio: str) -> tuple[float, float] | tuple[None, None]:
     params = {
@@ -54,7 +54,7 @@ def main():
                 (cod, nome, lat, lon),
             )
         else:
-            print(f"    -> NÃO encontrado!")
+            print("    -> NÃO encontrado!")
         time.sleep(1.1)
 
     conn.close()

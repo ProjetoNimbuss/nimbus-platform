@@ -1,9 +1,7 @@
 import re
 import pandas as pd
-from pathlib import Path
 import duckdb
 from datetime import datetime
-import numpy as np
 import sys
 import os
 
@@ -22,21 +20,21 @@ def tratar_mes_ano(mes_ano_str):
     try:
         partes = str(mes_ano_str).lower().split('/')
         return meses.get(partes[0]), int(partes[1])
-    except:
+    except Exception:
         return None, None
 
 def executar_etl():
     # Conecta (ou cria, se não existir) o arquivo do banco de dados
     conn = duckdb.connect(DB_PATH)
-    
+
     padrao_busca = "*.parquet"
     if len(sys.argv) > 1:
         ano = sys.argv[1]
         padrao_busca = f"*_{ano}.parquet"
         print(f"Modo Incremental: Buscando apenas arquivos do ano {ano}...")
-        
+
     arquivos = list(INPUT_DIR.glob(padrao_busca))
-    
+
     if not arquivos:
         print(f"Nenhum arquivo Parquet encontrado para o padrão {padrao_busca}")
         return
@@ -90,14 +88,14 @@ def executar_etl():
                     partes = str(row['Mês/Ano']).split('/')
                     mes_ext = partes[0].lower()
                     ano_str = partes[1]
-                    
+
                     meses = {
                         'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
                         'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
                     }
-                    
+
                     return datetime(int(ano_str), meses[mes_ext], int(row['dia']))
-                except:
+                except Exception:
                     return None
 
             df_long['data'] = df_long.apply(formatar_data, axis=1)
@@ -117,7 +115,7 @@ def executar_etl():
                 'chuva': 'precipitacao'
             })
 
-            
+
             # 1. Garante que o schema bronze existe
             conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 

@@ -9,8 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, UnexpectedAlertPresentException
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from io import StringIO
 import sys
 import os
@@ -121,7 +120,7 @@ class ScraperAPAC:
             # 1. Clique no botão Pesquisar
             btn = self.driver.find_element(By.ID, "btPesquisaPluvio")
             self.driver.execute_script("arguments[0].click();", btn)
-            
+
             # 2. Lida com Alertas do site
             try:
                 WebDriverWait(self.driver, 3).until(EC.alert_is_present())
@@ -135,28 +134,28 @@ class ScraperAPAC:
             # 3. ESPERA INTELIGENTE (Smart Polling)
             tempo_maximo = 120
             inicio = time.time()
-            
+
             while time.time() - inicio < tempo_maximo:
                 try:
                     html = self.driver.page_source
                     soup = BeautifulSoup(html, "html.parser")
                     tabela = soup.find("table", {"id": "tbMonPluvio"})
-                    
+
                     if tabela:
                         html_io = StringIO(str(tabela))
                         # header=0 garante que ele vai achar a coluna "Código"
                         dfs = pd.read_html(html_io, decimal=",", thousands=".", header=0)
-                        
+
                         if dfs:
                             df = dfs[0]
                             # Verifica se a tabela já possui a coluna Mês/Ano
                             if "Mês/Ano" in df.columns:
                                 # Transforma a coluna em texto contínuo
                                 texto_datas = " ".join(df["Mês/Ano"].dropna().astype(str))
-                                
+
                                 #só aceita se o ano pedido aparece na tabela
                                 if str(ano_esperado) in texto_datas:
-                                    
+
                                     # Limpeza de colunas
                                     df.columns = [str(c).strip() for c in df.columns]
                                     colunas_presentes = [col for col in COLUNAS_ESPERADAS if col in df.columns]
@@ -175,8 +174,8 @@ class ScraperAPAC:
                                     df = self._validar_ano(df, ano_esperado)
                                     return df
                 except Exception:
-                    pass 
-                
+                    pass
+
                 time.sleep(1) # Aguarda 1 segundo antes de olhar a tela de novo
 
             log.warning(f"  Timeout: O site não carregou dados de {ano_esperado} a tempo ou o ano está vazio.")
@@ -211,7 +210,7 @@ class ScraperAPAC:
         # Contagem de anos encontrados para log
         anos_encontrados = df["_ano_extraido"].dropna().unique()
         if len(anos_encontrados) == 0:
-            log.warning(f"  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando.")
+            log.warning("  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando.")
             return pd.DataFrame() # Rejeita!
 
         # Se achou os anos, continua a lógica original
@@ -267,7 +266,7 @@ def main():
                     else:
                         log.warning(f"  [!] {ano}: Sem dados válidos para este ano.")
 
-                    time.sleep(1)  
+                    time.sleep(1)
 
                 except Exception as e:
                     log.error(f"Falha no ano {ano}: {e}")

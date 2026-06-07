@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import duckdb
 from fastapi import FastAPI
@@ -42,14 +41,14 @@ def get_alertas():
             {"id": 2, "municipio": "Olinda", "nivel_alerta": "Atenção 🟡", "atualizacao": agora},
             {"id": 3, "municipio": "Jaboatão dos Guararapes", "nivel_alerta": "Alerta 🟠", "atualizacao": agora},
         ]
-    
+
     try:
         # Consulta a camada Gold do dbt
         df = conn.execute("SELECT id, municipio, nivel_alerta, atualizacao FROM gold.gold_grid_risk ORDER BY id").df()
-        
+
         # Converter atualizacao para string para serialização JSON
         df['atualizacao'] = df['atualizacao'].astype(str)
-        
+
         return df.to_dict(orient="records")
     except duckdb.CatalogException:
         # Caso a tabela gold_grid_risk não exista ainda

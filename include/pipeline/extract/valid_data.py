@@ -1,5 +1,4 @@
 import pandas as pd
-from pathlib import Path
 import re
 import sys
 import os
@@ -37,7 +36,7 @@ def valid_data(caminho_arquivo):
         return f"INCONSISTÊNCIA! Nome={ano_arquivo}, Dados={list(anos_internos)}"
 
     return None
-    
+
 def main():
     if not DIR_DADOS.exists():
         print(f'Pasta {DIR_DADOS} não encontrada')

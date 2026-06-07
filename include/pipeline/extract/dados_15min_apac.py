@@ -5,7 +5,6 @@ import sys
 import os
 import duckdb
 from datetime import datetime
-from pathlib import Path
 
 # Adiciona o diretório raiz ao PYTHONPATH para localizar 'config'
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -41,11 +40,11 @@ def fetch_data() -> pd.DataFrame:
     df.rename(columns=col_map, inplace=True)
 
     df["data_hora"] = pd.to_datetime(df["data_hora"])
-    
+
     # Cast tipos numéricos (substituindo erros/espaços vazios por NaN)
     for col in ["chuva", "latitude", "longitude"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-        
+
     # Cast strings para garantir que não haja tipos mistos (que quebram o Parquet)
     for col in ["estacao_nome", "codigo_gmmc", "cidade", "nome_estacao", "tipo", "uf"]:
         df[col] = df[col].astype(str)
@@ -79,12 +78,12 @@ def update_bronze_view():
     # O DuckDB usa '**/*.parquet' para ler recursivamente todas as partições Hive
     # O parâmetro hive_partitioning=1 faz com que 'ano', 'mes' e 'dia' virem colunas automáticas
     path_pattern = str(CEMADEN_DIR / "**" / "*.parquet")
-    
+
     conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.apac_15min_bronze AS 
+        CREATE OR REPLACE VIEW bronze.apac_15min_bronze AS
         SELECT * FROM read_parquet('{path_pattern}', hive_partitioning=1)
     """)
-    
+
     conn.close()
     print(f"VIEW bronze.apac_15min_bronze atualizada/verificada apontando para {CEMADEN_DIR}.")
 

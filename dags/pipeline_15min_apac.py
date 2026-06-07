@@ -9,7 +9,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "include", "pipeline", "extract"))
 
 # Importamos as funções do script agora que o sys.path está correto
-from dados_15min_apac import fetch_data, save_partitioned, update_bronze_view
+from dados_15min_apac import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
 
 default_args = {
     'owner': 'pepluvi',

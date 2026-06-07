@@ -14,8 +14,6 @@ dependencies = [
 
 [tool.ruff]
 line-length = 100
-select = ["E", "F", "W"]
-ignore = ["E501"]
 exclude = [
     ".git",
     "venv",
@@ -23,6 +21,10 @@ exclude = [
     ".astro",
     "transform",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]
 
 [tool.mypy]
 ignore_missing_imports = true
