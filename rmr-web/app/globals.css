@@ -8,19 +8,19 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Base palette (dark) */
-  --color-bg-primary: #080C14;
-  --color-bg-surface: #0F1420;
-  --color-bg-surface-alt: #161C2C;
-  --color-bg-surface-hover: #1C2438;
-  --color-bg-card: #121929;
-  --color-border: #1E2740;
-  --color-border-light: #283352;
+  /* Base palette (light) */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-surface: #F8FAFC;
+  --color-bg-surface-alt: #F1F5F9;
+  --color-bg-surface-hover: #E2E8F0;
+  --color-bg-card: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-border-light: #CBD5E1;
 
-  --color-text-primary: #F0F4F8;
-  --color-text-secondary: #94A3B8;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
   --color-text-muted: #64748B;
-  --color-text-inverse: #0F172A;
+  --color-text-inverse: #F0F4F8;
 
   /* Accent */
   --color-accent: #3B82F6;
@@ -52,7 +52,7 @@
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
