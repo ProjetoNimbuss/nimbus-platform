@@ -334,18 +334,17 @@ body {
   border-radius: 16px;
 }
 .leaflet-popup-content-wrapper {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(8px);
+  background: #FFFFFF !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 12px !important;
-  color: var(--color-text-primary) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
 }
 .leaflet-popup-tip {
-  background: rgba(15, 23, 42, 0.95) !important;
+  background: #FFFFFF !important;
 }
 .leaflet-popup-close-button {
-  color: var(--color-text-secondary) !important;
+  color: #000000 !important;
 }
 .leaflet-control-zoom a {
   background: var(--color-bg-surface) !important;
@@ -361,15 +360,15 @@ body {
   stroke: rgba(148, 163, 184, 0.06) !important;
 }
 .recharts-text {
-  fill: var(--color-text-muted) !important;
+  fill: #475569 !important;
   font-size: 11px !important;
 }
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(8px);
+  background: #FFFFFF !important;
   border: 1px solid var(--color-border) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  color: #000000 !important;
 }
 
 /* ---- KPI Card ---- */

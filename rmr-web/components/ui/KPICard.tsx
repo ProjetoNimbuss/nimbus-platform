@@ -9,6 +9,7 @@ interface KPICardProps {
   icon?: React.ReactNode;
   className?: string;
   accentColor?: string;
+  style?: React.CSSProperties;
 }
 
 export default function KPICard({
@@ -20,9 +21,10 @@ export default function KPICard({
   icon,
   className,
   accentColor,
+  style,
 }: KPICardProps) {
   return (
-    <div className={cn("kpi-card group", className)}>
+    <div className={cn("kpi-card group", className)} style={style}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <p className="kpi-label">{label}</p>
