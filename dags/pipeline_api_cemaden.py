@@ -35,11 +35,11 @@ def task_update_view():
 with DAG(
     dag_id='pipeline_api_cemaden',
     default_args=default_args,
-    description='Pipeline Real-Time: Extração API CEMADEN e View Bronze',
+    description='Pipeline Real-Time: Extração API CEMADEN → Bronze → Silver → Gold',
     schedule='*/15 * * * *',
     catchup=False,
     max_active_runs=1,
-    tags=['api', 'real-time', 'bronze', 'silver'],
+    tags=['api', 'real-time', 'bronze', 'silver', 'gold'],
 ) as dag:
 
     extrair = PythonOperator(
@@ -52,14 +52,15 @@ with DAG(
         python_callable=task_update_view,
     )
 
-    dbt_run_silver_cemaden = BashOperator(
-        task_id='dbt_run_silver_cemaden',
-        bash_command=f'cd {DBT_DIR} && dbt run --select data_cemaden_silver',
+    dbt_run_cemaden = BashOperator(
+        task_id='dbt_run_cemaden',
+        bash_command=f'cd {DBT_DIR} && dbt run --select tag:cemaden',
     )
 
-    dbt_test_silver_cemaden = BashOperator(
-        task_id='dbt_test_silver_cemaden',
-        bash_command=f'cd {DBT_DIR} && dbt test --select data_cemaden_silver',
+    dbt_test_cemaden = BashOperator(
+        task_id='dbt_test_cemaden',
+        bash_command=f'cd {DBT_DIR} && dbt test --select tag:cemaden',
     )
 
-    extrair >> atualizar_view >> dbt_run_silver_cemaden >> dbt_test_silver_cemaden
+    extrair >> atualizar_view >> dbt_run_cemaden >> dbt_test_cemaden
+

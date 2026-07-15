@@ -180,3 +180,82 @@ models:
                 - 'Acima da média'
                 - 'Abaixo da média'
                 - 'Dentro da normalidade'
+
+  - name: data_cemaden_leituras_15min
+    description: >
+      Série temporal completa dos dados de chuva do CEMADEN em granularidade de 15 minutos.
+      Desnormalizada com atributos dimensionais da estação (nome, município, lat/lon, código IBGE).
+      Atualização incremental com lookback de 24h para absorver dados atrasados (late data).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - estacao_codigo
+            - data_hora
+    columns:
+      - name: estacao_codigo
+        tests:
+          - not_null
+      - name: data_hora
+        tests:
+          - not_null
+      - name: nome_estacao
+        tests:
+          - not_null
+      - name: municipio
+        tests:
+          - not_null
+      - name: chuva
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+  - name: data_cemaden_acumulados
+    description: >
+      Para cada estação e cada timestamp de 15 min, os acumulados de chuva nas janelas
+      de 15min, 1h, 3h, 6h, 12h e 24h. Todos os atributos dimensionais da estação embutidos.
+      Retorna NULL quando o número de leituras consecutivas é insuficiente para preencher
+      a janela (ex: estação offline). Atualização incremental com lookback de 24h.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - estacao_codigo
+            - data_hora
+    columns:
+      - name: estacao_codigo
+        tests:
+          - not_null
+      - name: data_hora
+        tests:
+          - not_null
+      - name: chuva_15min
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: chuva_1h
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: chuva_3h
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: chuva_6h
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: chuva_12h
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: chuva_24h
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
