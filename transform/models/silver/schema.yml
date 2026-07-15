@@ -73,3 +73,23 @@ models:
           - not_null
           - accepted_values:
               values: ['Normal', 'Perigo Potencial', 'Perigo', 'Grande Perigo']
+
+  - name: data_cemaden_silver
+    description: "Tabela fatos de monitoramento em tempo real (15 minutos) do CEMADEN, limpa, deduplicada e enriquecida."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - estacao_codigo
+            - data_hora
+    columns:
+      - name: estacao_codigo
+        tests:
+          - not_null
+      - name: data_hora
+        tests:
+          - not_null
+      - name: chuva
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true

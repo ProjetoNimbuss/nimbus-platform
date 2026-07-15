@@ -96,22 +96,24 @@ Airflow DAG  (diária)
 ```
 Airflow DAG  (15 em 15 min)
 │
-├─ 1. extrair_salvar_raw → Salva Parquet com partição Hive (ano/mes/dia)
-└─ 2. atualizar_view     → Atualiza VIEW bronze.apac_15min_bronze (Zero Copy)
+├─ 1. extrair_salvar_raw → Salva Parquet na Raw com partição Hive (ano/mes/dia)
+└─ 2. atualizar_view     → Atualiza VIEW bronze.data_cemaden (Zero Copy)
 ```
 
 #### Camadas de dados (Medallion)
 
 | Camada | Localização | Formato | Descrição |
-| --- | --- | --- | --- |
-| **Bronze (Hist.)** | `bronze.monitoramento_pluviometrico` | DuckDB Table | Dados históricos carregados fisicamente. |
-| **Bronze (15min)** | `bronze.apac_15min_bronze` | DuckDB View | View dinâmica sobre os arquivos Parquet da Raw. |
-| **Silver** | `silver.mapeamento_estacoes` | DuckDB Table | Cadastro unificado das estações (CEMADEN + IBGE), com lat/lon. |
-| **Silver** | `silver.monitoramento_pluviometrico` | DuckDB Table | OBT enriquecida com alertas e médias móveis. |
-| **Gold** | `gold.agregados_anuais` | DuckDB Table | Total anual, média histórica, desvio e classificação (Seco/Normal/Chuvoso). |
-| **Gold** | `gold.ranking_eventos_extremos` | DuckDB Table | Eventos diários classificados por percentil e severidade. |
-| **Gold** | `gold.comparativo_sazonal` | DuckDB View | Comparativo mensal: ano corrente vs média dos últimos 5 anos. |
-| **Gold** | `gold.qualidade_estacoes` | DuckDB Table | Score de confiança, % preenchimento e categoria por estação. |
+|---|---|---|---|
+| **Raw (APAC)** | `include/data/raw/*.parquet` | Parquet | Arquivos brutos por ano/região. |
+| **Raw (API)** | `include/data/raw/api_cemaden/` | Parquet | Particionamento Hive: `ano=Y/mes=M/dia=D/`. |
+| **Bronze (Hist)** | `bronze.monitoramento_pluviometrico` | DuckDB Table | Dados históricos carregados fisicamente. |
+| **Bronze (15min)** | `bronze.data_cemaden` | DuckDB View | View dinâmica sobre os arquivos Parquet da Raw. |
+| **Silver** | `silver.mapeamento_estacoes` | DuckDB Table | Cadastro unificado das estações deduplicadas (CEMADEN + IBGE), com lat/lon. |
+| **Silver** | `silver.monitoramento_pluviometrico` | DuckDB Table | OBT enriquecida: `codigo_estacao`, `precipitacao_mm`, `mesorregiao`, alertas, médias móveis. |
+| **Gold** | `gold.agregados_anuais` | DuckDB Table | Total anual, média histórica, desvio e classificação do ano (Seco/Normal/Chuvoso). |
+| **Gold** | `gold.ranking_eventos_extremos` | DuckDB Table | Eventos diários classificados por percentil e severidade por estação e mesorregião. |
+| **Gold** | `gold.comparativo_sazonal` | DuckDB View | Comparativo mensal: ano corrente vs média dos últimos 5 anos, por mesorregião. |
+| **Gold** | `gold.qualidade_estacoes` | DuckDB Table | Perfil de qualidade por estação: score de confiança, % preenchimento, % nulos e categoria (`alta`/`media`/`baixa`). |
 
 ### 2. API (`rmr-api`)
 
@@ -156,8 +158,8 @@ rmr-alertas/
 ├── rmr-api/                       # Backend — FastAPI
 │   └── main.py                    # Endpoints da API
 ├── dags/
-│   ├── pipeline_pepluvi.py        # DAG diária (carga + dbt Silver/Gold)
-│   └── pipeline_15min_apac.py     # DAG real-time (15 min)
+│   ├── pipeline_pepluvi.py       # DAG Airflow (carga diária + dbt Silver + Gold)
+│   └── pipeline_api_cemaden.py   # DAG Real-time (15 min)
 ├── include/
 │   ├── config/
 │   │   └── settings.py            # Constantes de caminho e URL
@@ -166,8 +168,8 @@ rmr-alertas/
 │   │   └── pepluvi.duckdb         # Banco OLAP local (bronze · silver · gold)
 │   └── pipeline/
 │       ├── extract/
-│       │   ├── scraping_apac.py   # Scraper Selenium → salva Parquet
-│       │   ├── dados_15min_apac.py # API CEMADEN → salva Parquet Hive
+│       │   ├── scraping_apac.py  # scraper Selenium → salva Parquet
+│       │   ├── pipeline_api_cemaden.py # API CEMADEN → salva Parquet Hive
 │       │   ├── ingest_muni_ibge.py # API IBGE → DuckDB
 │       │   └── valid_data.py      # Validação dos arquivos
 │       └── load/

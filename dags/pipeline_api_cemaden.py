@@ -1,15 +1,16 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import sys
 import os
 
-# Ajusta sys.path para importar o script de extração
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "include", "pipeline", "extract"))
+DBT_DIR = os.path.join(PROJECT_ROOT, "transform")
 
 # Importamos as funções do script agora que o sys.path está correto
-from dados_15min_apac import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
+from pipeline_api_cemaden import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
 
 default_args = {
     'owner': 'pepluvi',
@@ -18,7 +19,7 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=1),
 }
 
 def task_extract():
@@ -28,17 +29,17 @@ def task_extract():
     return path
 
 def task_update_view():
-    """Tarefa 2: Garante que a VIEW apac_15min_bronze existe e aponta para a Raw"""
+    """Tarefa 2: Garante que a VIEW data_cemaden existe e aponta para a Raw"""
     update_bronze_view()
 
 with DAG(
-    dag_id='pipeline_15min_apac',
+    dag_id='pipeline_api_cemaden',
     default_args=default_args,
-    description='Pipeline 15 min: Extração API CEMADEN e View Bronze',
+    description='Pipeline Real-Time: Extração API CEMADEN e View Bronze',
     schedule='*/15 * * * *',
     catchup=False,
     max_active_runs=1,
-    tags=['api', 'real-time', 'bronze'],
+    tags=['api', 'real-time', 'bronze', 'silver'],
 ) as dag:
 
     extrair = PythonOperator(
@@ -51,4 +52,14 @@ with DAG(
         python_callable=task_update_view,
     )
 
-    extrair >> atualizar_view
+    dbt_run_silver_cemaden = BashOperator(
+        task_id='dbt_run_silver_cemaden',
+        bash_command=f'cd {DBT_DIR} && dbt run --select data_cemaden_silver',
+    )
+
+    dbt_test_silver_cemaden = BashOperator(
+        task_id='dbt_test_silver_cemaden',
+        bash_command=f'cd {DBT_DIR} && dbt test --select data_cemaden_silver',
+    )
+
+    extrair >> atualizar_view >> dbt_run_silver_cemaden >> dbt_test_silver_cemaden

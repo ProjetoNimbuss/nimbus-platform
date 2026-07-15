@@ -2,8 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Carrega variáveis de ambiente (se existirem)
-load_dotenv()
 
 # Definições de Caminho
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
