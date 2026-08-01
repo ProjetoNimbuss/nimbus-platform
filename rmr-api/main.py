@@ -18,25 +18,25 @@ async def lifespan(app: FastAPI):
     global global_conn
     # Inicia uma conexão em memória
     global_conn = duckdb.connect(":memory:")
-    
+
     # Anexa o banco de dados local existente se existir
     if DB_PATH.exists():
         global_conn.execute(f"ATTACH '{DB_PATH}' AS pepluvi (READ_ONLY)")
-    
+
     # Cria uma materialized view (tabela em memória) a partir dos parquets do CEMADEN
     # Usando o caminho absoluto baseado no DB_PATH para achar a pasta data
     data_path = DB_PATH.parent.parent.parent / "data" / "raw" / "api_cemaden" / "*" / "*" / "*" / "*.parquet"
     try:
         global_conn.execute(f"""
-            CREATE TABLE cemaden_data AS 
+            CREATE TABLE cemaden_data AS
             SELECT * FROM read_parquet('{data_path}', union_by_name=true)
         """)
         print("Materialized view 'cemaden_data' criada com sucesso.")
     except Exception as e:
         print(f"Erro ao criar materialized view: {e}")
-        
+
     yield
-    
+
     # Clean up
     if global_conn:
         global_conn.close()
@@ -124,7 +124,7 @@ def get_stations():
     conn = get_db()
     if conn is None:
         return []
-    
+
     try:
         # Retorna as estações únicas disponíveis nos dados materializados
         query = """
@@ -143,7 +143,7 @@ def get_station_precipitation(station_id: str):
     conn = get_db()
     if conn is None:
         return []
-        
+
     try:
         # Retorna a série de precipitação ordenada para a estação solicitada convertendo data para string
         query = f"""
