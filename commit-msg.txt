@@ -1,0 +1,17 @@
+feat(ui): identidade visual com sombrinha de frevo e interatividade na previsão
+
+Este commit refina a identidade visual do Header e melhora a navegação a
+partir do Dashboard inicial.
+
+Alterações:
+- feat: substituição do emoji genérico de nuvem por um SVG customizado
+  da "Sombrinha de Frevo" no Header, trazendo forte identidade regional 
+  ao projeto e com animação interativa no hover.
+- style: remoção do fundo quadrado do logotipo para um visual mais 
+  limpo, com a cor do cabo da sombrinha adaptando-se dinamicamente 
+  ao tema (Light/Dark mode).
+- feat: transformação do mini-card de previsão de 24h na tela inicial 
+  em um elemento interativo (`Link`), redirecionando o usuário para 
+  a página completa de previsão.
+- style: adição de hover states no bloco de previsão, incluindo uma 
+  "pílula" de texto animada convidando à ação ("Ver previsão completa").

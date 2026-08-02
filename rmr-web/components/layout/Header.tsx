@@ -8,6 +8,18 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Menu, X } from "lucide-react";
 
+const FrevoUmbrella = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform -rotate-12 transition-transform group-hover:rotate-12 duration-300">
+    <path d="M12 12V21C12 21.5523 11.5523 22 11 22C10.4477 22 10 21.5523 10 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M12 12V1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M 2 12 A 10 10 0 0 1 4.93 4.93 L 12 12 Z" fill="#EF4444" stroke="currentColor" strokeWidth="0.5" />
+    <path d="M 4.93 4.93 A 10 10 0 0 1 12 2 L 12 12 Z" fill="#3B82F6" stroke="currentColor" strokeWidth="0.5" />
+    <path d="M 12 2 A 10 10 0 0 1 19.07 4.93 L 12 12 Z" fill="#FACC15" stroke="currentColor" strokeWidth="0.5" />
+    <path d="M 19.07 4.93 A 10 10 0 0 1 22 12 L 12 12 Z" fill="#22C55E" stroke="currentColor" strokeWidth="0.5" />
+    <circle cx="12" cy="2" r="1.5" fill="currentColor" />
+  </svg>
+);
+
 export default function Header() {
   const pathname = usePathname();
   const isTechnical = pathname.startsWith("/tecnico");
@@ -26,8 +38,8 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-accent)] text-white text-lg font-bold shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-              🌧️
+            <div className="flex items-center justify-center text-[var(--color-text-primary)]">
+              <FrevoUmbrella />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">

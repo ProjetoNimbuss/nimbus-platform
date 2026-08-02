@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
 import { motion } from "framer-motion";
 import AlertBanner from "@/components/ui/AlertBanner";
@@ -56,12 +57,21 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
-              Próximas 24h (Recife)
-            </p>
-            {recifeForecast && (
-              <ForecastTimeline days={[recifeForecast]} />
-            )}
+            <Link href="/previsao" className="group flex flex-col items-end">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium bg-[var(--color-bg-surface-alt)] text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                  Ver previsão completa →
+                </span>
+                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  Próximas 24h (Recife)
+                </p>
+              </div>
+              {recifeForecast && (
+                <div className="inline-block pointer-events-none shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 rounded-xl">
+                  <ForecastTimeline days={[recifeForecast]} />
+                </div>
+              )}
+            </Link>
           </div>
         </div>
 
