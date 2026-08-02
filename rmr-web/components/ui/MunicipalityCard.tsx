@@ -4,11 +4,13 @@ import type { Municipality } from "@/lib/types";
 import { ALERT_CONFIG, ALERT_PRIORITY } from "@/lib/constants";
 import AlertBadge from "./AlertBadge";
 import { formatMM } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MunicipalityCardProps {
   municipality: Municipality;
   index: number;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
 const itemVariants = {
@@ -16,7 +18,12 @@ const itemVariants = {
   show: { opacity: 1, y: 0 }
 };
 
-export default function MunicipalityCard({ municipality: m, index }: MunicipalityCardProps) {
+export default function MunicipalityCard({ 
+  municipality: m, 
+  index, 
+  isExpanded = false, 
+  onToggle 
+}: MunicipalityCardProps) {
   const config = ALERT_CONFIG[m.nivel_alerta];
   const isEmergency = m.nivel_alerta === "emergencia";
 
@@ -40,13 +47,18 @@ export default function MunicipalityCard({ municipality: m, index }: Municipalit
     <motion.div
       variants={itemVariants}
       layoutId={`card-${m.slug}`}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className="h-full block"
+      whileHover={!isExpanded ? { scale: 1.02, y: -2 } : {}}
+      whileTap={!isExpanded ? { scale: 0.98 } : {}}
+      className={`h-full block ${isExpanded ? 'lg:col-span-2 row-span-2' : ''}`}
     >
-      <Link href={`/municipio/${m.slug}`} className="block h-full">
+      <div 
+        onClick={onToggle}
+        className="block h-full outline-none"
+        role="button"
+        tabIndex={0}
+      >
         <div
-          className={`alert-card p-5 cursor-pointer h-full ${
+          className={`alert-card p-5 cursor-pointer h-full flex flex-col ${
             isEmergency ? "animate-emergency-pulse ring-1" : ""
           }`}
           style={{
@@ -79,15 +91,32 @@ export default function MunicipalityCard({ municipality: m, index }: Municipalit
                 className="text-xs font-medium flex items-center gap-1"
                 style={{ color: trendColor[m.tendencia] }}
               >
-                {trendIcon[m.tendencia]} {trendLabel[m.tendencia]}
+                <motion.span
+                  animate={{ 
+                    y: m.tendencia === 'subindo' ? [0, -3, 0] : m.tendencia === 'descendo' ? [0, 3, 0] : 0,
+                    x: m.tendencia === 'estavel' ? [0, 2, 0] : 0
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                  style={{ display: 'inline-block' }}
+                >
+                  {trendIcon[m.tendencia]}
+                </motion.span>
+                {trendLabel[m.tendencia]}
               </span>
             </div>
-            <p
+            <motion.p
               className="text-2xl font-bold font-[family-name:var(--font-mono)] mt-1"
               style={{ color: config.color }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100, damping: 15, delay: 0.2 }}
             >
               {formatMM(m.precipitacao_24h)}
-            </p>
+            </motion.p>
           </div>
 
           {/* Mini progress bar */}
@@ -104,13 +133,49 @@ export default function MunicipalityCard({ municipality: m, index }: Municipalit
           {/* Last hour */}
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-[var(--color-text-muted)]">Última hora</span>
-            <span className="font-medium font-[family-name:var(--font-mono)] text-[var(--color-text-secondary)]">
+            <motion.span 
+              className="font-medium font-[family-name:var(--font-mono)] text-[var(--color-text-secondary)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
               {formatMM(m.precipitacao_1h)}
-            </span>
+            </motion.span>
           </div>
         </div>
+          {/* Expanded Content */}
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: "auto", marginTop: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="overflow-hidden border-t border-[var(--alert-border)] pt-4 mt-auto"
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)] uppercase">População</span>
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">{m.populacao.toLocaleString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)] uppercase">Estações Ativas</span>
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">{m.estacoes.length}</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <span className="text-[11px] font-medium text-[var(--color-text-muted)] uppercase">Status Geral</span>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                    {m.nivel_alerta === 'emergencia' ? 'Áreas de risco crítico sob forte precipitação. Ações de resposta em andamento.' :
+                     m.nivel_alerta === 'alerta' ? 'Precipitação intensa detectada. Monitoramento reforçado em áreas baixas.' :
+                     m.nivel_alerta === 'atencao' ? 'Chuvas moderadas. Situação sob acompanhamento contínuo.' :
+                     'Níveis pluviométricos dentro da normalidade para a região.'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 }

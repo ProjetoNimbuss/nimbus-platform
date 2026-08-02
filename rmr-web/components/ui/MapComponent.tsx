@@ -35,7 +35,26 @@ interface Precipitation {
   chuva: number;
 }
 
-export default function MapComponent() {
+import { mockMunicipalities } from "@/lib/mock-data";
+import { useMap } from "react-leaflet";
+
+function MapFlyTo({ selectedSlug }: { selectedSlug?: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (selectedSlug) {
+      const mun = mockMunicipalities.find(m => m.slug === selectedSlug);
+      if (mun) {
+        map.flyTo([mun.latitude, mun.longitude], 12, { duration: 1.5 });
+      }
+    } else {
+      map.flyTo([-8.0476, -34.8770], 10, { duration: 1.5 });
+    }
+  }, [selectedSlug, map]);
+  
+  return null;
+}
+
+export default function MapComponent({ selectedSlug }: { selectedSlug?: string | null }) {
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [precipData, setPrecipData] = useState<Precipitation[]>([]);
@@ -97,6 +116,8 @@ export default function MapComponent() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
+        <MapFlyTo selectedSlug={selectedSlug} />
+
         {stations.map((station) => (
           <Marker
             key={station.id}

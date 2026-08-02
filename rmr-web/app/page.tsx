@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 
 import { motion } from "framer-motion";
 import AlertBanner from "@/components/ui/AlertBanner";
@@ -7,8 +8,12 @@ import MunicipalityCard from "@/components/ui/MunicipalityCard";
 import ForecastTimeline from "@/components/ui/ForecastTimeline";
 import { mockMunicipalities, mockOverview, mockForecast } from "@/lib/mock-data";
 import { formatMM, getMaxAlertLevel } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const MapComponent = dynamic(() => import("@/components/ui/MapComponent"), { ssr: false });
 
 export default function DashboardPage() {
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const overview = mockOverview;
   const municipalities = mockMunicipalities;
   const recifeForecast = mockForecast.find(f => f.municipio === "recife");
@@ -110,8 +115,27 @@ export default function DashboardPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           {municipalities.map((mun, i) => (
-            <MunicipalityCard key={mun.slug} municipality={mun} index={i} />
+            <MunicipalityCard 
+              key={mun.slug} 
+              municipality={mun} 
+              index={i} 
+              isExpanded={selectedSlug === mun.slug}
+              onToggle={() => setSelectedSlug(selectedSlug === mun.slug ? null : mun.slug)}
+            />
           ))}
+        </motion.div>
+
+        {/* Map Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-8"
+        >
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+            Mapa de Estações Interativo
+          </h2>
+          <MapComponent selectedSlug={selectedSlug} />
         </motion.div>
       </div>
     </motion.div>

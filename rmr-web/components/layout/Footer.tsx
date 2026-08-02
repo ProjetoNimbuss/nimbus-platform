@@ -17,8 +17,6 @@ export default function Footer() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Pipeline: Airflow + DuckDB + dbt</span>
-            <span className="hidden sm:inline">•</span>
             <span className="font-medium text-[var(--color-text-secondary)]">
               RMR Alertas © 2026
             </span>

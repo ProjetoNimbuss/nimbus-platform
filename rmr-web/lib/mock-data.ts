@@ -3,11 +3,18 @@
 // Realistic data for the 9 municipalities of RMR
 // ============================================================
 
-import type {
+import {
   Municipality, Station, MonitoringRecord, AnnualAggregate,
   ExtremeEvent, SeasonalComparison, ForecastDay, ForecastHour,
   FloodPoint, RegionalOverview,
 } from "./types";
+
+// ---- Deterministic Random Generator to prevent hydration mismatches ----
+let seed = 12345;
+function random(): number {
+  seed = (seed * 9301 + 49297) % 233280;
+  return seed / 233280;
+}
 
 // ---- Helper: generate dates ----
 function dateStr(year: number, month: number, day: number): string {
@@ -120,8 +127,8 @@ function generateMonitoringData(): MonitoringRecord[] {
     for (let d = 0; d < 30; d++) {
       const date = new Date(now);
       date.setDate(date.getDate() - d);
-      const baseRain = d < 3 ? 20 + Math.random() * 60 : Math.random() * 30;
-      const rain = Math.random() > 0.3 ? Math.round(baseRain * 10) / 10 : 0;
+      const baseRain = d < 3 ? 20 + random() * 60 : random() * 30;
+      const rain = random() > 0.3 ? Math.round(baseRain * 10) / 10 : 0;
 
       let alerta: "Normal" | "Perigo Potencial" | "Perigo" | "Grande Perigo" = "Normal";
       for (const a of alertLevels) {
@@ -156,12 +163,12 @@ function generateAnnualAggregates(): AnnualAggregate[] {
   const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
   for (const station of mockStations.slice(0, 10)) {
-    const baseRain = 1400 + Math.random() * 600;
+    const baseRain = 1400 + random() * 600;
     for (const year of years) {
-      const variation = (Math.random() - 0.5) * 600;
+      const variation = (random() - 0.5) * 600;
       const total = Math.round(baseRain + variation);
       const historicMean = Math.round(baseRain);
-      const stddev = Math.round(150 + Math.random() * 100);
+      const stddev = Math.round(150 + random() * 100);
       const deviation = total - historicMean;
       const deviationPct = Math.round((deviation / historicMean) * 1000) / 10;
       const classification =
@@ -177,15 +184,15 @@ function generateAnnualAggregates(): AnnualAggregate[] {
         longitude: station.longitude,
         ano: year,
         total_anual_mm: total,
-        dias_com_chuva: 100 + Math.floor(Math.random() * 80),
-        dias_sem_chuva: 365 - (100 + Math.floor(Math.random() * 80)),
-        max_diario_mm: Math.round(60 + Math.random() * 100),
+        dias_com_chuva: 100 + Math.floor(random() * 80),
+        dias_sem_chuva: 365 - (100 + Math.floor(random() * 80)),
+        max_diario_mm: Math.round(60 + random() * 100),
         media_mensal_mm: Math.round(total / 12 * 100) / 100,
         media_historica_anual_mm: historicMean,
         stddev_historico_mm: stddev,
         desvio_historico_mm: deviation,
         desvio_historico_pct: deviationPct,
-        percentil_anual: Math.round(Math.random() * 100 * 10) / 10,
+        percentil_anual: Math.round(random() * 100 * 10) / 10,
         classificacao_ano: classification,
       });
     }
@@ -209,11 +216,11 @@ function generateExtremeEvents(): ExtremeEvent[] {
   for (const sv of severities) {
     const count = sv.sev === "Evento Histórico (top 1%)" ? 5 : sv.sev === "Muito Extremo (top 5%)" ? 8 : 12;
     for (let i = 0; i < count; i++) {
-      const station = mockStations[Math.floor(Math.random() * mockStations.length)];
-      const year = 2020 + Math.floor(Math.random() * 6);
-      const month = 3 + Math.floor(Math.random() * 6); // rainy season
-      const day = 1 + Math.floor(Math.random() * 28);
-      const rain = Math.round((sv.min + Math.random() * (sv.max - sv.min)) * 10) / 10;
+      const station = mockStations[Math.floor(random() * mockStations.length)];
+      const year = 2020 + Math.floor(random() * 6);
+      const month = 3 + Math.floor(random() * 6); // rainy season
+      const day = 1 + Math.floor(random() * 28);
+      const rain = Math.round((sv.min + random() * (sv.max - sv.min)) * 10) / 10;
 
       events.push({
         codigo_estacao: station.codigo_estacao,
@@ -227,8 +234,8 @@ function generateExtremeEvents(): ExtremeEvent[] {
         precipitacao_mm: rain,
         alerta_chuva: rain >= 50 ? "Grande Perigo" : rain >= 25 ? "Perigo" : "Perigo Potencial",
         periodo_clima: "Chuvoso",
-        percentil_estacao: Math.round((sv.pctMin + Math.random() * (100 - sv.pctMin)) * 100) / 100,
-        percentil_mesorregiao: Math.round((sv.pctMin - 5 + Math.random() * (105 - sv.pctMin)) * 100) / 100,
+        percentil_estacao: Math.round((sv.pctMin + random() * (100 - sv.pctMin)) * 100) / 100,
+        percentil_mesorregiao: Math.round((sv.pctMin - 5 + random() * (105 - sv.pctMin)) * 100) / 100,
         rank_estacao: id + 1,
         severidade: sv.sev,
       });
@@ -250,12 +257,12 @@ function generateSeasonalComparison(): SeasonalComparison[] {
 
   for (const meso of mesorregioes) {
     for (let mes = 1; mes <= 12; mes++) {
-      const baseRain = mes >= 3 && mes <= 8 ? 150 + Math.random() * 200 : 30 + Math.random() * 60;
+      const baseRain = mes >= 3 && mes <= 8 ? 150 + random() * 200 : 30 + random() * 60;
       const media5 = Math.round(baseRain * 10) / 10;
       const stddev = Math.round(baseRain * 0.3 * 10) / 10;
       const min5 = Math.round((baseRain * 0.5) * 10) / 10;
       const max5 = Math.round((baseRain * 1.6) * 10) / 10;
-      const atual = mes <= currentMonth ? Math.round((baseRain + (Math.random() - 0.4) * baseRain * 0.8) * 10) / 10 : null;
+      const atual = mes <= currentMonth ? Math.round((baseRain + (random() - 0.4) * baseRain * 0.8) * 10) / 10 : null;
       const desvioMm = atual !== null ? Math.round((atual - media5) * 10) / 10 : null;
       const desvioPct = atual !== null && media5 > 0 ? Math.round((desvioMm! / media5) * 1000) / 10 : null;
 
@@ -273,7 +280,7 @@ function generateSeasonalComparison(): SeasonalComparison[] {
         mes,
         mesorregiao: meso,
         precipitacao_ano_atual_mm: atual,
-        dias_ano_atual: atual !== null ? Math.floor(15 + Math.random() * 10) : null,
+        dias_ano_atual: atual !== null ? Math.floor(15 + random() * 10) : null,
         media_5anos_mm: media5,
         stddev_5anos_mm: stddev,
         min_5anos_mm: min5,
@@ -298,7 +305,7 @@ function generateForecast(): ForecastDay[] {
     for (let d = 0; d < 7; d++) {
       const date = new Date(now);
       date.setDate(date.getDate() + d);
-      const dayRain = d < 2 ? 30 + Math.random() * 50 : d < 4 ? 10 + Math.random() * 30 : Math.random() * 15;
+      const dayRain = d < 2 ? 30 + random() * 50 : d < 4 ? 10 + random() * 30 : random() * 15;
 
       const horas: ForecastHour[] = [];
       let maxHourRain = 0;
@@ -306,18 +313,18 @@ function generateForecast(): ForecastDay[] {
 
       for (let h = 0; h < 24; h++) {
         const hourRain = h >= 14 && h <= 20
-          ? Math.round(dayRain / 6 * (0.5 + Math.random()) * 10) / 10
-          : Math.round(Math.random() * 3 * 10) / 10;
+          ? Math.round(dayRain / 6 * (0.5 + random()) * 10) / 10
+          : Math.round(random() * 3 * 10) / 10;
         totalRain += hourRain;
         maxHourRain = Math.max(maxHourRain, hourRain);
 
         horas.push({
           datetime: isoDateTime(date.getFullYear(), date.getMonth() + 1, date.getDate(), h),
           precipitacao_mm: hourRain,
-          probabilidade_chuva: Math.min(100, Math.round(hourRain * 8 + Math.random() * 20)),
+          probabilidade_chuva: Math.min(100, Math.round(hourRain * 8 + random() * 20)),
           temperatura_c: Math.round((24 + Math.sin(h / 24 * Math.PI) * 6) * 10) / 10,
-          umidade_pct: Math.round(65 + Math.random() * 30),
-          vento_kmh: Math.round(5 + Math.random() * 20),
+          umidade_pct: Math.round(65 + random() * 30),
+          vento_kmh: Math.round(5 + random() * 20),
           municipio: mun.slug,
         });
       }
