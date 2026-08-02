@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import AlertBanner from "@/components/ui/AlertBanner";
 import KPICard from "@/components/ui/KPICard";
 import MunicipalityCard from "@/components/ui/MunicipalityCard";
@@ -10,8 +13,23 @@ export default function DashboardPage() {
   const municipalities = mockMunicipalities;
   const recifeForecast = mockForecast.find(f => f.municipio === "recife");
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-[calc(100vh-130px)]">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col min-h-[calc(100vh-130px)]"
+    >
       {/* Alert Banner */}
       {overview.mensagem_alerta && (
         <AlertBanner
@@ -43,7 +61,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Global KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
           <KPICard
             label="Nível Máximo de Alerta"
             value={overview.nivel_maximo.toUpperCase()}
@@ -74,18 +97,23 @@ export default function DashboardPage() {
             deltaType="neutral"
             delta="98.5% cobertura"
           />
-        </div>
+        </motion.div>
 
         {/* Municipalities Grid */}
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           Status por Município
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        >
           {municipalities.map((mun, i) => (
             <MunicipalityCard key={mun.slug} municipality={mun} index={i} />
           ))}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

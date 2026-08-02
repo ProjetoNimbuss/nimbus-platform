@@ -1,4 +1,6 @@
+"use client";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface KPICardProps {
   label: string;
@@ -12,6 +14,11 @@ interface KPICardProps {
   style?: React.CSSProperties;
 }
 
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0 }
+};
+
 export default function KPICard({
   label,
   value,
@@ -24,7 +31,13 @@ export default function KPICard({
   style,
 }: KPICardProps) {
   return (
-    <div className={cn("kpi-card group", className)} style={style}>
+    <motion.div 
+      variants={itemVariants}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={cn("kpi-card group", className)} 
+      style={style}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <p className="kpi-label">{label}</p>
@@ -60,6 +73,6 @@ export default function KPICard({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -4,11 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_STANDARD, NAV_TECHNICAL } from "@/lib/constants";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Menu, X } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
   const isTechnical = pathname.startsWith("/tecnico");
   const navItems = isTechnical ? NAV_TECHNICAL : NAV_STANDARD;
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/80 backdrop-blur-xl">
@@ -63,6 +73,15 @@ export default function Header() {
               <span>Ao vivo</span>
             </div>
 
+            {/* Theme Toggle (Desktop) */}
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-alt)] transition-colors"
+              aria-label="Alternar tema"
+            >
+              {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             {/* Mode Toggle */}
             <div className="mode-toggle">
               <Link
@@ -87,16 +106,53 @@ export default function Header() {
 
             {/* Mobile menu button */}
             <button
+              onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-alt)] transition-colors"
               aria-label="Menu"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isOpen && (
+        <div className="md:hidden border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 space-y-4 shadow-xl">
+          <nav className="flex flex-col gap-2">
+            {navItems.map((item) => {
+              const isActive = item.href === "/"
+                ? pathname === "/"
+                : item.href === "/tecnico"
+                ? pathname === "/tecnico"
+                : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "nav-link block w-full",
+                    isActive && "active"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          {/* Theme Toggle Mobile */}
+          <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+            <span className="text-sm font-medium text-[var(--color-text-secondary)]">Modo Escuro</span>
+            <button 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-bg-surface-alt)] text-[var(--color-text-primary)]"
+            >
+              {mounted && theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

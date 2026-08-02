@@ -25,7 +25,7 @@
   /* Accent */
   --color-accent: #3B82F6;
   --color-accent-hover: #2563EB;
-  --color-accent-muted: #1E3A5F;
+  --color-accent-muted: rgba(59, 130, 246, 0.15);
 
   /* Alert system */
   --color-alert-normal: #18794E;
@@ -43,6 +43,44 @@
   --color-alert-emergencia: #EF4444;
   --color-alert-emergencia-bg: rgba(239, 68, 68, 0.15);
   --color-alert-emergencia-border: rgba(239, 68, 68, 0.3);
+}
+
+.dark {
+  /* Base palette (dark) */
+  --color-bg-primary: #0F172A;
+  --color-bg-surface: #1E293B;
+  --color-bg-surface-alt: #334155;
+  --color-bg-surface-hover: #475569;
+  --color-bg-card: #1E293B;
+  --color-border: #334155;
+  --color-border-light: #475569;
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-text-inverse: #0F172A;
+
+  /* Accent */
+  --color-accent: #3B82F6;
+  --color-accent-hover: #60A5FA;
+  --color-accent-muted: rgba(59, 130, 246, 0.15);
+
+  /* Alert system - slightly adjusted for dark mode */
+  --color-alert-normal: #22C55E;
+  --color-alert-normal-bg: rgba(34, 197, 94, 0.15);
+  --color-alert-normal-border: rgba(34, 197, 94, 0.3);
+
+  --color-alert-atencao: #FACC15;
+  --color-alert-atencao-bg: rgba(250, 204, 21, 0.15);
+  --color-alert-atencao-border: rgba(250, 204, 21, 0.3);
+
+  --color-alert-alerta: #FB923C;
+  --color-alert-alerta-bg: rgba(251, 146, 60, 0.15);
+  --color-alert-alerta-border: rgba(251, 146, 60, 0.3);
+
+  --color-alert-emergencia: #F87171;
+  --color-alert-emergencia-bg: rgba(248, 113, 113, 0.15);
+  --color-alert-emergencia-border: rgba(248, 113, 113, 0.3);
 }
 
 /* ---- Base Styles ---- */

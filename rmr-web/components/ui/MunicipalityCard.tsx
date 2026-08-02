@@ -1,13 +1,20 @@
+"use client";
 import Link from "next/link";
 import type { Municipality } from "@/lib/types";
 import { ALERT_CONFIG, ALERT_PRIORITY } from "@/lib/constants";
 import AlertBadge from "./AlertBadge";
 import { formatMM } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface MunicipalityCardProps {
   municipality: Municipality;
   index: number;
 }
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0 }
+};
 
 export default function MunicipalityCard({ municipality: m, index }: MunicipalityCardProps) {
   const config = ALERT_CONFIG[m.nivel_alerta];
@@ -30,18 +37,24 @@ export default function MunicipalityCard({ municipality: m, index }: Municipalit
   };
 
   return (
-    <Link href={`/municipio/${m.slug}`}>
-      <div
-        className={`alert-card p-5 cursor-pointer animate-fade-in ${
-          isEmergency ? "animate-emergency-pulse ring-1" : ""
-        }`}
-        style={{
-          ["--alert-bg" as string]: config.bg,
-          ["--alert-border" as string]: config.border,
-          animationDelay: `${index * 0.05}s`,
-          ...(isEmergency ? { "--tw-ring-color": config.border } as React.CSSProperties : {}),
-        }}
-      >
+    <motion.div
+      variants={itemVariants}
+      layoutId={`card-${m.slug}`}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className="h-full block"
+    >
+      <Link href={`/municipio/${m.slug}`} className="block h-full">
+        <div
+          className={`alert-card p-5 cursor-pointer h-full ${
+            isEmergency ? "animate-emergency-pulse ring-1" : ""
+          }`}
+          style={{
+            ["--alert-bg" as string]: config.bg,
+            ["--alert-border" as string]: config.border,
+            ...(isEmergency ? { "--tw-ring-color": config.border } as React.CSSProperties : {}),
+          }}
+        >
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -96,7 +109,8 @@ export default function MunicipalityCard({ municipality: m, index }: Municipalit
             </span>
           </div>
         </div>
-      </div>
-    </Link>
+        </div>
+      </Link>
+    </motion.div>
   );
 }

@@ -31,6 +31,9 @@ export const metadata: Metadata = {
   ],
 };
 
+import AtmosphereWrapper from "@/components/ui/AtmosphereWrapper";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,12 +42,21 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col gradient-bg">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="min-h-full flex flex-col gradient-bg relative">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AtmosphereWrapper />
+          <Header />
+          <main className="flex-1 z-10 relative">{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
