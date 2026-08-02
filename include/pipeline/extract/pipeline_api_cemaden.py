@@ -22,7 +22,7 @@ def fetch_data() -> pd.DataFrame:
     # Otimização: uso de list comprehension e json_normalize em vez de .apply(pd.Series)
     dados_completos = [json.loads(x) if isinstance(x, str) else {} for x in df["Dados_completos"]]
     df_norm = pd.json_normalize(dados_completos).add_prefix("dc_")
-    
+
     df = pd.concat([df.drop(columns=["Dados_completos"]).reset_index(drop=True), df_norm.reset_index(drop=True)], axis=1)
 
     col_map = {
