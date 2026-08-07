@@ -3,8 +3,7 @@
 import { motion } from "framer-motion";
 import { mockForecast, mockMunicipalities } from "@/lib/mock-data";
 import { formatMM } from "@/lib/utils";
-import ForecastTimeline from "@/components/ui/ForecastTimeline";
-
+import HourlyGyroscope from "@/components/ui/HourlyGyroscope";
 export default function PrevisaoPage() {
   const container = {
     hidden: { opacity: 0 },
@@ -38,10 +37,10 @@ export default function PrevisaoPage() {
         </p>
       </div>
 
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm mb-8">
-        <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-6 uppercase tracking-wider">Timeline das Próximas Horas</h2>
-        {forecast[0] && (
-          <ForecastTimeline days={[forecast[0]]} />
+      <div className="mb-8">
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-6 uppercase tracking-wider pl-1">Timeline das Próximas Horas</h2>
+        {forecast[0] && forecast[0].horas && (
+          <HourlyGyroscope hours={forecast[0].horas} />
         )}
       </div>
 
@@ -62,8 +61,16 @@ export default function PrevisaoPage() {
             <span className="text-sm font-semibold text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)] transition-colors">
               {new Date(dia.data).toLocaleDateString("pt-BR", { weekday: 'short', day: 'numeric', month: 'short' })}
             </span>
-            <div className="my-4 text-4xl">
+            <div className="relative my-4 text-4xl group/icon flex justify-center cursor-help">
               {dia.precipitacao_total_mm > 30 ? "⛈️" : dia.precipitacao_total_mm > 10 ? "🌧️" : dia.precipitacao_total_mm > 0 ? "🌦️" : "☀️"}
+              
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[140px] bg-slate-800 dark:bg-slate-700 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg opacity-0 invisible group-hover/icon:opacity-100 group-hover/icon:visible transition-all duration-200 z-10 whitespace-normal leading-tight shadow-xl">
+                {dia.precipitacao_total_mm > 30 ? "Chuvas intensas e volumosas" : 
+                 dia.precipitacao_total_mm > 10 ? "Algumas pancadas de chuva" : 
+                 dia.precipitacao_total_mm > 0 ? "Chuvas escassas ou garoa" : 
+                 "Tempo aberto e sem chuvas"}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-slate-700"></div>
+              </div>
             </div>
             <span className="text-xl font-bold font-mono text-[var(--color-accent)]">
               {formatMM(dia.precipitacao_total_mm)}
