@@ -126,6 +126,6 @@ export const NAV_STANDARD = [
 export const NAV_TECHNICAL = [
   { href: "/tecnico", label: "Dashboard", icon: "bar-chart" },
   { href: "/tecnico/historico", label: "Histórico", icon: "trending-up" },
-  { href: "/tecnico/extremos", label: "Extremos", icon: "zap" },
-  { href: "/tecnico/sazonal", label: "Sazonal", icon: "calendar" },
+  // { href: "/tecnico/extremos", label: "Extremos", icon: "zap" },
+  // { href: "/tecnico/sazonal", label: "Sazonal", icon: "calendar" },
 ];

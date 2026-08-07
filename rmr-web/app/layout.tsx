@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import AccessibilityMenu from "@/components/ui/AccessibilityMenu";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -52,10 +53,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <a 
+            href="#main-content" 
+            className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-[var(--color-bg-primary)] focus:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            Pular para o conteúdo principal
+          </a>
           <AtmosphereWrapper />
           <Header />
-          <main className="flex-1 z-10 relative">{children}</main>
+          <main id="main-content" className="flex-1 z-10 relative" tabIndex={-1}>{children}</main>
           <Footer />
+          <AccessibilityMenu />
         </ThemeProvider>
       </body>
     </html>

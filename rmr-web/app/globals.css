@@ -83,6 +83,21 @@
   --color-alert-emergencia-border: rgba(248, 113, 113, 0.3);
 }
 
+/* ---- High Contrast Mode ---- */
+html.high-contrast {
+  --color-bg-primary: #000000 !important;
+  --color-bg-surface: #111111 !important;
+  --color-bg-surface-alt: #222222 !important;
+  --color-bg-card: #000000 !important;
+  --color-text-primary: #FFFFFF !important;
+  --color-text-secondary: #E0E0E0 !important;
+  --color-text-muted: #CCCCCC !important;
+  --color-border: #FFFF00 !important;
+  --color-border-light: #FFFF00 !important;
+  --color-accent: #FFFF00 !important;
+  --color-accent-hover: #FFFFA0 !important;
+}
+
 /* ---- Base Styles ---- */
 * {
   box-sizing: border-box;

@@ -5,6 +5,7 @@ import { ALERT_CONFIG, ALERT_PRIORITY } from "@/lib/constants";
 import AlertBadge from "./AlertBadge";
 import { formatMM } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { User, Camera, Video, MessageSquare } from "lucide-react";
 
 interface MunicipalityCardProps {
   municipality: Municipality;
@@ -17,6 +18,11 @@ const itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0 }
 };
+
+const MOCK_REPORTS = [
+  { id: 1, user: "Morador Local", time: "10 min atrás", text: "Rua alagada no centro, impossível passar de carro.", type: "photo" as const },
+  { id: 2, user: "Defesa Civil Vol.", time: "25 min atrás", text: "Chuva forte continua. Rio subiu 15cm na última hora.", type: "video" as const },
+];
 
 export default function MunicipalityCard({ 
   municipality: m, 
@@ -53,9 +59,18 @@ export default function MunicipalityCard({
     >
       <div 
         onClick={onToggle}
-        className="block h-full outline-none"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle?.();
+          }
+        }}
+        className="block h-full outline-none rounded-2xl focus-visible:ring-4 focus-visible:ring-[var(--color-primary)] transition-shadow"
         role="button"
         tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-controls={`content-${m.slug}`}
+        aria-label={`Ver detalhes do município de ${m.nome}`}
       >
         <div
           className={`alert-card p-5 cursor-pointer h-full flex flex-col ${
@@ -170,6 +185,43 @@ export default function MunicipalityCard({
                      m.nivel_alerta === 'atencao' ? 'Chuvas moderadas. Situação sob acompanhamento contínuo.' :
                      'Níveis pluviométricos dentro da normalidade para a região.'}
                   </p>
+                </div>
+
+                {/* Community Reports Mock */}
+                <div className="mt-6 border-t border-[var(--color-border)] pt-4" id={`content-${m.slug}`}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <MessageSquare size={16} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Relatos da Comunidade</h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {MOCK_REPORTS.map((report) => (
+                      <div key={report.id} className="bg-[var(--color-bg-surface-alt)] p-3 rounded-xl border border-[var(--color-border)]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-[var(--color-border)] flex items-center justify-center overflow-hidden" aria-hidden="true">
+                            <User size={12} className="text-[var(--color-text-secondary)]" />
+                          </div>
+                          <span className="text-xs font-semibold text-[var(--color-text-primary)]">{report.user}</span>
+                          <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">{report.time}</span>
+                        </div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-2 leading-relaxed">
+                          {report.text}
+                        </p>
+                        {report.type && (
+                          <div className="flex gap-2">
+                            <div className="h-16 w-24 bg-[var(--color-bg-primary)] rounded-lg border border-[var(--color-border)] flex items-center justify-center relative overflow-hidden" aria-label={`Anexo de ${report.type}`}>
+                              {report.type === 'photo' ? (
+                                <Camera size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+                              ) : (
+                                <Video size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+                              )}
+                              <span className="absolute bottom-1 right-1 text-[8px] bg-[var(--color-bg-surface)] px-1 rounded text-[var(--color-text-muted)]">Mock</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             )}

@@ -67,7 +67,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               {recifeForecast && (
-                <div className="inline-block pointer-events-none shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 rounded-xl">
+                <div className="inline-block pointer-events-none transition-transform duration-300 group-hover:-translate-y-0.5">
                   <ForecastTimeline days={[recifeForecast]} />
                 </div>
               )}

@@ -10,7 +10,7 @@ interface ForecastTimelineProps {
 
 export default function ForecastTimeline({ days }: ForecastTimelineProps) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+    <div className={`flex gap-3 ${days.length > 1 ? 'overflow-x-auto pb-2 scrollbar-thin' : ''}`}>
       {days.map((day, i) => {
         const config = ALERT_CONFIG[day.nivel_alerta];
         return (

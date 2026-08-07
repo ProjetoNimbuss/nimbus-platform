@@ -100,10 +100,10 @@ export default function TecnicoDashboardPage() {
                   </td>
                   <td>{station.municipio}</td>
                   <td>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      station.categoria_qualidade === 'alta' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      station.categoria_qualidade === 'media' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide ${
+                      station.categoria_qualidade === 'alta' ? 'bg-[#18794E] text-white dark:bg-green-900/50 dark:text-green-300' :
+                      station.categoria_qualidade === 'media' ? 'bg-[#E5A800] text-white dark:bg-yellow-900/50 dark:text-yellow-300' :
+                      'bg-[#EF4444] text-white dark:bg-red-900/50 dark:text-red-300'
                     }`}>
                       {station.categoria_qualidade.toUpperCase()}
                     </span>
