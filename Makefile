@@ -1,12 +1,12 @@
-.PHONY: help install lint extract load
+.PHONY: help install lint extract setup-storage
 .DEFAULT_GOAL := help
 
 help:
 	@echo "Comandos disponíveis:"
-	@echo "  install      - Instala as dependências de desenvolvimento"
-	@echo "  lint         - Roda ruff para linting"
-	@echo "  extract      - Roda o scraper localmente"
-	@echo "  load         - Roda a ingestão localmente"
+	@echo "  install        - Instala as dependências de desenvolvimento"
+	@echo "  lint           - Roda ruff para linting"
+	@echo "  extract        - Roda o scraper APAC localmente"
+	@echo "  setup-storage  - Provisiona os buckets MinIO (executar uma vez no setup)"
 
 install:
 	pip install -r requirements.txt
@@ -17,7 +17,7 @@ lint:
 	ruff check .
 
 extract:
-	python pipeline/extract/scraping_apac.py
+	python pipeline/extract/extract_apac.py
 
-load:
-	python pipeline/load/ingest_duckdb.py
+setup-storage:
+	python include/pipeline/storage/setup_minio.py

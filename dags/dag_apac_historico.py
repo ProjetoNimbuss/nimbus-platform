@@ -14,13 +14,13 @@ PROJETO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DBT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'transform')
 
 with DAG(
-    'pipeline_pepluvi',
+    'dag_apac_historico',
     default_args=default_args,
-    description='DAG para o pipeline PEPluvi (Carga Incremental D-1)',
+    description='DAG APAC: scraping histórico + dbt Silver + Gold (Carga Incremental D-1)',
     schedule='0 6 * * *',
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=['pepluvi'],
+    tags=['apac', 'historico'],
 ) as dag:
 
     task_limpa_parquet = BashOperator(
@@ -30,17 +30,12 @@ with DAG(
 
     task_scraping = BashOperator(
         task_id='scraping',
-        bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/scraping_apac.py'
+        bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/extract_apac.py'
     )
 
     task_validacao = BashOperator(
         task_id='validacao_integridade',
-        bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/valid_data.py'
-    )
-
-    task_ingestao = BashOperator(
-        task_id='ingestao_duckdb',
-        bash_command='cd ' + PROJETO_DIR + ' && python pipeline/load/ingest_duckdb.py {{ macros.ds_format(ds, "%Y-%m-%d", "%Y") }}'
+        bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/validate_parquet.py'
     )
 
     task_dbt_run_silver = BashOperator(
@@ -67,7 +62,6 @@ with DAG(
         task_limpa_parquet
         >> task_scraping
         >> task_validacao
-        >> task_ingestao
         >> task_dbt_run_silver
         >> task_dbt_test_silver
         >> task_dbt_run_gold

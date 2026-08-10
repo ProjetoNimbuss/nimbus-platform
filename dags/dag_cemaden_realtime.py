@@ -9,8 +9,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "include", "pipeline", "extract"))
 DBT_DIR = os.path.join(PROJECT_ROOT, "transform")
 
-# Importamos as funções do script agora que o sys.path está correto
-from pipeline_api_cemaden import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
+# Importamos as funções do script renomeado
+from extract_cemaden import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
 
 default_args = {
     'owner': 'pepluvi',
@@ -33,13 +33,13 @@ def task_update_view():
     update_bronze_view()
 
 with DAG(
-    dag_id='pipeline_api_cemaden',
+    dag_id='dag_cemaden_realtime',
     default_args=default_args,
     description='Pipeline Real-Time: Extração API CEMADEN → Bronze → Silver → Gold',
     schedule='*/15 * * * *',
     catchup=False,
     max_active_runs=1,
-    tags=['api', 'real-time', 'bronze', 'silver', 'gold'],
+    tags=['cemaden', 'api', 'real-time'],
 ) as dag:
 
     extrair = PythonOperator(
