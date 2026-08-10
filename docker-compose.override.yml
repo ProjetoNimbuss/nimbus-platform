@@ -1,21 +1,16 @@
 # docker-compose.override.yml
-# ─────────────────────────────────────────────────────────────────────────────
 # Extensão do docker-compose gerado pelo Astro CLI.
 # Adiciona o serviço MinIO (S3-compatible object storage) ao ambiente local.
-#
-# Console Web: http://localhost:9001
-# S3 API:      http://localhost:9000   (dentro do Docker: http://minio:9000)
-# ─────────────────────────────────────────────────────────────────────────────
 
 version: "3.8"
 
 services:
   minio:
     image: minio/minio:latest
-    container_name: rmr_minio
+    container_name: nimbus_minio
     ports:
-      - "9000:9000"   # S3 API endpoint
-      - "9001:9001"   # Console Web (admin UI)
+      - "9000:9000" # S3 API endpoint
+      - "9001:9001" # Console Web
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -23,7 +18,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 10s
       retries: 5
