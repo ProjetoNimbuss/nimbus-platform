@@ -13,15 +13,18 @@ from selenium.common.exceptions import TimeoutException
 from io import StringIO
 import sys
 import os
+from config.settings import BASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+import s3fs
 
-# Adiciona o diretório raiz ao PYTHONPATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import BASE_URL, RAW_DIR
 
-OUTPUT_DIR = RAW_DIR
 LOG_FILE = Path(__file__).resolve().parent / "scraper.log"
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+s3_fs = s3fs.S3FileSystem(
+    key=MINIO_ACCESS_KEY,
+    secret=MINIO_SECRET_KEY,
+    client_kwargs={"endpoint_url": MINIO_ENDPOINT}
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,7 +41,7 @@ MESORREGIOES = {
     2601: "Sertao_Pernambucano",
 }
 
-# Colunas obrigatórias que a tabela de dados real deve conter
+# Colunas obrigatórias que a tabela de deve conter
 COLUNAS_ESPERADAS = ["Código", "Posto", "Mês/Ano"]
 
 
@@ -244,8 +247,8 @@ def main():
             scraper.selecionar_mesorregiao(cod_id)
 
             for ano in range(ano_inicio, ano_fim + 1):
-                arquivo_parquet = OUTPUT_DIR / f"{nome_meso}_{ano}.parquet"
-                if arquivo_parquet.exists():
+                s3_path = f"s3://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
+                if s3_fs.exists(s3_path):
                     continue
 
                 d_ini = f"01/01/{ano}"
@@ -261,7 +264,12 @@ def main():
                     if not df.empty:
                         df["mesorregiao_id"] = cod_id
                         df["ano_ref"] = ano
-                        df.to_parquet(arquivo_parquet, index=False)
+                        storage_options = {
+                            "key": MINIO_ACCESS_KEY,
+                            "secret": MINIO_SECRET_KEY,
+                            "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+                        }
+                        df.to_parquet(s3_path, index=False, storage_options=storage_options)
                         log.info(f"  [OK] {ano}: {len(df)} registros salvos.")
                     else:
                         log.warning(f"  [!] {ano}: Sem dados válidos para este ano.")

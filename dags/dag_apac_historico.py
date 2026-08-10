@@ -23,11 +23,6 @@ with DAG(
     tags=['apac', 'historico'],
 ) as dag:
 
-    task_limpa_parquet = BashOperator(
-        task_id='limpa_parquet',
-        bash_command='cd ' + PROJETO_DIR + ' && rm -f data/raw/*_{{ macros.ds_format(ds, "%Y-%m-%d", "%Y") }}.parquet'
-    )
-
     task_scraping = BashOperator(
         task_id='scraping',
         bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/extract_apac.py'
@@ -59,8 +54,7 @@ with DAG(
     )
 
     (
-        task_limpa_parquet
-        >> task_scraping
+        task_scraping
         >> task_validacao
         >> task_dbt_run_silver
         >> task_dbt_test_silver
