@@ -7,12 +7,12 @@ import duckdb
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import CEMADEN_DIR, DB_PATH
-
+from config.settings import DB_PATH, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+from storage.duckdb_minio import get_duckdb_conn
 URL = "http://dados.apac.pe.gov.br:41120/cemaden/"
 
 def fetch_data() -> pd.DataFrame:
-    """Busca dados da API e retorna DataFrame normalizado de forma eficiente."""
+    #Busca dados da API e retorna DataFrame normalizado de forma eficiente
     response = requests.get(URL, timeout=30)
     response.raise_for_status()
     dados = response.json()
@@ -58,7 +58,7 @@ def fetch_data() -> pd.DataFrame:
     return df[cols]
 
 def save_partitioned(df: pd.DataFrame) -> str:
-    """Salva o DataFrame em formato Parquet particionado pela data do dado (Event Time)."""
+    #Salva o DataFrame em formato Parquet particionado pela data do dado no MinIO
     if df.empty:
         print("DataFrame vazio. Nenhum arquivo salvo.")
         return ""
@@ -68,31 +68,37 @@ def save_partitioned(df: pd.DataFrame) -> str:
     if pd.isnull(data_referencia):
         data_referencia = datetime.now()
 
-    partition_dir = CEMADEN_DIR / f"ano={data_referencia.year}" / f"mes={data_referencia.month:02d}" / f"dia={data_referencia.day:02d}"
-    partition_dir.mkdir(parents=True, exist_ok=True)
-
     # Identificador de timestamp único no dia para evitar colisões de arquivos
     now = datetime.now()
     filename = f"{now.strftime('%H-%M-%S')}.parquet"
-    filepath = partition_dir / filename
+    
+    bucket = BUCKETS["cemaden"]
+    s3_path = f"s3://{bucket}/ano={data_referencia.year}/mes={data_referencia.month:02d}/dia={data_referencia.day:02d}/{filename}"
 
-    df.to_parquet(filepath, index=False)
-    return str(filepath)
+    storage_options = {
+        "key": MINIO_ACCESS_KEY,
+        "secret": MINIO_SECRET_KEY,
+        "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    }
+
+    df.to_parquet(s3_path, index=False, storage_options=storage_options)
+    return s3_path
 
 def update_bronze_view():
-    """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet."""
-    conn = duckdb.connect(DB_PATH)
+    #Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet no MinIO
+    conn = get_duckdb_conn()
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 
-    path_pattern = str(CEMADEN_DIR / "**" / "*.parquet")
+    bucket = BUCKETS["cemaden"]
+    s3_pattern = f"s3://{bucket}/**/*.parquet"
 
     conn.execute(f"""
         CREATE OR REPLACE VIEW bronze.data_cemaden AS
-        SELECT * FROM read_parquet('{path_pattern}', hive_partitioning=1)
+        SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
 
     conn.close()
-    print(f"VIEW bronze.data_cemaden atualizada/verificada apontando para {CEMADEN_DIR}.")
+    print(f"VIEW bronze.data_cemaden atualizada/verificada apontando para {s3_pattern}.")
 
 def executar_pipeline():
     """Função principal para execução local."""

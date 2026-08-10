@@ -2,15 +2,13 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
+from extract_cemaden import fetch_data, save_partitioned, update_bronze_view 
 import sys
 import os
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "include", "pipeline", "extract"))
 DBT_DIR = os.path.join(PROJECT_ROOT, "transform")
-
-# Importamos as funções do script renomeado
-from extract_cemaden import fetch_data, save_partitioned, update_bronze_view  # noqa: E402
 
 default_args = {
     'owner': 'pepluvi',
