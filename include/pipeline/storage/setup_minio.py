@@ -1,15 +1,3 @@
-"""
-setup_minio.py
-──────────────────────────────────────────────────────────────────────────────
-Provisiona os 5 buckets padrão do projeto RMR Alertas no MinIO.
-
-Executar uma única vez no setup do ambiente ou via task Airflow no início
-das DAGs (usando um BranchPythonOperator ou sensor de bucket).
-
-Uso:
-    python include/pipeline/storage/setup_minio.py
-"""
-
 import os
 import sys
 from minio import Minio
@@ -18,7 +6,6 @@ from minio.error import S3Error
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
 
-# ─── Buckets ──────────────────────────────────────────────────────────────────
 BUCKETS = [
     "web-scraping-apac",
     "cemaden-api",
@@ -29,7 +16,6 @@ BUCKETS = [
 
 
 def get_client() -> Minio:
-    """Retorna cliente MinIO configurado via variáveis de ambiente."""
     endpoint = MINIO_ENDPOINT.replace("http://", "").replace("https://", "")
     use_ssl = MINIO_ENDPOINT.startswith("https://")
     return Minio(
@@ -41,7 +27,6 @@ def get_client() -> Minio:
 
 
 def setup_buckets() -> None:
-    """Cria os buckets padrão se ainda não existirem."""
     client = get_client()
     print("Conectando ao MinIO:", MINIO_ENDPOINT)
 
