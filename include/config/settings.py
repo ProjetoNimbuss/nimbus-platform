@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR   = PROJECT_ROOT / "data"
 
 # Banco de Dados DuckDB
-DB_PATH = str(DATA_DIR / "pepluvi.duckdb")
+DB_PATH = str(DATA_DIR / "nimbus.duckdb")
 
 # URLs Scraping APAC
 BASE_URL = os.getenv("APAC_BASE_URL", "http://old.apac.pe.gov.br/meteorologia/monitoramento-pluvio.php")
