@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 app = FastAPI(title="Sistema de Alertas Climáticos - RMR", version="1.0.0")
 
-DB_PATH = Path(__file__).parent.parent / "include" / "data" / "pepluvi.duckdb"
+DB_PATH = Path(__file__).parent.parent / "include" / "data" / "nimbus.duckdb"
 
 # Global connection
 global_conn = None
