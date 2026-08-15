@@ -2,7 +2,7 @@ import time
 import duckdb
 import requests
 
-DB_PATH = "include/data/pepluvi.duckdb"
+DB_PATH = "include/data/nimbus.duckdb"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 HEADERS = {"User-Agent": "PEPluvi/1.0"}
 

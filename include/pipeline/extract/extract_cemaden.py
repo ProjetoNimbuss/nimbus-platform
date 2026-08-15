@@ -101,7 +101,6 @@ def update_bronze_view():
     print(f"VIEW bronze.data_cemaden atualizada/verificada apontando para {s3_pattern}.")
 
 def executar_pipeline():
-    """Função principal para execução local."""
     print("Iniciando extração CEMADEN...")
     df = fetch_data()
     print(f"{len(df)} registros obtidos.")

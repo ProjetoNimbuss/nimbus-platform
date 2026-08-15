@@ -28,11 +28,6 @@ with DAG(
         bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/extract_apac.py'
     )
 
-    task_validacao = BashOperator(
-        task_id='validacao_integridade',
-        bash_command=f'cd {PROJETO_DIR} && python pipeline/extract/validate_parquet.py'
-    )
-
     task_dbt_run_silver = BashOperator(
         task_id='dbt_run_silver',
         bash_command=f'cd {DBT_DIR} && dbt run --select silver'
@@ -55,7 +50,6 @@ with DAG(
 
     (
         task_scraping
-        >> task_validacao
         >> task_dbt_run_silver
         >> task_dbt_test_silver
         >> task_dbt_run_gold

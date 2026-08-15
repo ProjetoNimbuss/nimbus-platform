@@ -230,7 +230,24 @@ class ScraperAPAC:
         self.driver.quit()
 
 
-# Main
+def update_bronze_view():
+    """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet de APAC no MinIO"""
+    from pipeline.storage.duckdb_minio import get_duckdb_conn
+    conn = get_duckdb_conn()
+    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
+
+    bucket = BUCKETS.get("apac", "web-scraping-apac")
+    s3_pattern = f"s3://{bucket}/*.parquet"
+
+    conn.execute(f"""
+        CREATE OR REPLACE VIEW bronze.apac_historico AS
+        SELECT * FROM read_parquet('{s3_pattern}')
+    """)
+
+    conn.close()
+    print(f"[APAC] VIEW bronze.apac_historico atualizada/verificada apontando para {s3_pattern}.")
+
+
 def main():
     ano_inicio = 1961
     ano_fim = date.today().year
@@ -286,9 +303,12 @@ def main():
                         log.error(f"Falha ao recuperar após erro: {e2}")
                     time.sleep(2)
 
+        update_bronze_view()
+
     finally:
         scraper.fechar()
 
 
 if __name__ == "__main__":
     main()
+
