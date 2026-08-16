@@ -27,11 +27,12 @@ MINIO_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 TOMORROW_IO_API_KEY = os.getenv("TOMORROW_IO_API_KEY", "")
 
 BUCKETS = {
-    "apac":          "web-scraping-apac",
-    "cemaden":       "cemaden-api",
-    "meteo_weather": "open-meteo-weather",
-    "meteo_marine":  "open-meteo-marine",
-    "tomorrow":      "tomorrow-api",
+    "apac":               "web-scraping-apac",
+    "cemaden":            "cemaden-api",
+    "meteo_weather":      "open-meteo-weather",
+    "meteo_marine":       "open-meteo-marine",
+    "tomorrow":           "tomorrow-api",
+    "geo_complementares": "dados-geo-complementares",
 }
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)

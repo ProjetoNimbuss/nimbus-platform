@@ -99,7 +99,3 @@ transform/logs/
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Documentação local (ADRs, Runbooks — não versionado)
-docs/
-

@@ -12,6 +12,7 @@ BUCKETS = [
     "open-meteo-weather",
     "open-meteo-marine",
     "tomorrow-api",
+    "dados-geo-complementares",
 ]
 
 
