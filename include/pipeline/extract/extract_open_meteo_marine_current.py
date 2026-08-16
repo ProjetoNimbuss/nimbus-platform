@@ -82,9 +82,10 @@ def save_to_minio(df: pd.DataFrame) -> str:
     now = datetime.now()
     time_str = now.strftime("%H%M%S")
 
-    for (ano, mes, dia), group in df.groupby(["ano", "mes", "dia"]):
-        s3_file_path = f"s3://{bucket}/current/ano={ano}/mes={mes}/dia={dia}/marine_current_{time_str}.parquet"
-        group_to_save = group.drop(columns=["ano", "mes", "dia"])
+    df["uf"] = "PE"
+    for (uf, ano, mes, dia), group in df.groupby(["uf", "ano", "mes", "dia"]):
+        s3_file_path = f"s3://{bucket}/current/uf={uf}/ano={ano}/mes={mes}/dia={dia}/marine_current_{time_str}.parquet"
+        group_to_save = group.drop(columns=["uf", "ano", "mes", "dia"])
         group_to_save.to_parquet(
             s3_file_path,
             index=False,
