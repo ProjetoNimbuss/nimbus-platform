@@ -23,6 +23,9 @@ MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
 MINIO_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID", "")
 MINIO_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 
+# Tomorrow.io
+TOMORROW_IO_API_KEY = os.getenv("TOMORROW_IO_API_KEY", "")
+
 BUCKETS = {
     "apac":          "web-scraping-apac",
     "cemaden":       "cemaden-api",
