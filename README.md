@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/nimbus_logo.jpg" alt="Nimbus — Sistema de Monitoramento e Alertas" width="480"/>
+<img src="docs/assets/nimbus_logo.png" alt="Nimbus — Sistema de Monitoramento e Alertas" width="480"/>
 
 
 ### Sistema Integrado de Dados e Alertas Meteorológicos
