@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import requests
 import pandas as pd
 from datetime import datetime
@@ -29,8 +28,9 @@ CITIES = {
 STORAGE_OPTIONS = {
     "key": MINIO_ACCESS_KEY,
     "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
 }
+
 
 def fetch_daily() -> pd.DataFrame:
     cidades = list(CITIES.keys())
@@ -52,11 +52,11 @@ def fetch_daily() -> pd.DataFrame:
             "wind_speed_10m_max",
             "weather_code",
             "sunrise",
-            "sunset"
+            "sunset",
         ],
         "models": "gfs_seamless,ecmwf_ifs04",
         "forecast_days": 7,
-        "timezone": "America/Recife"
+        "timezone": "America/Recife",
     }
 
     print("[DAILY] Requisitando previsão diária...")
@@ -79,6 +79,7 @@ def fetch_daily() -> pd.DataFrame:
     df_total["data_extracao"] = datetime.now().strftime("%Y-%m-%d")
     return df_total
 
+
 def save_to_minio(df_total: pd.DataFrame) -> str:
     if df_total.empty:
         print("[DAILY] DataFrame vazio. Nenhum arquivo salvo.")
@@ -90,18 +91,21 @@ def save_to_minio(df_total: pd.DataFrame) -> str:
 
     df_total["uf"] = "PE"
     for (uf, dt_ext), group in df_total.groupby(["uf", "data_extracao"]):
-        s3_file_path = f"s3://{bucket}/forecast_daily/uf={uf}/data_extracao={dt_ext}/daily_{time_str}.parquet"
+        s3_file_path = (
+            f"s3://{bucket}/forecast_daily/uf={uf}/data_extracao={dt_ext}/daily_{time_str}.parquet"
+        )
         group_to_save = group.drop(columns=["uf", "data_extracao"])
         group_to_save.to_parquet(
             s3_file_path,
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS
+            storage_options=STORAGE_OPTIONS,
         )
 
     print(f"[DAILY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_daily/")
     return f"s3://{bucket}/forecast_daily/"
+
 
 def update_bronze_view():
     conn = get_duckdb_conn()
@@ -114,12 +118,16 @@ def update_bronze_view():
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
-    print(f"[DAILY] VIEW bronze.open_meteo_forecast_daily atualizada/verificada apontando para {s3_pattern}.")
+    print(
+        f"[DAILY] VIEW bronze.open_meteo_forecast_daily atualizada/verificada apontando para {s3_pattern}."
+    )
+
 
 def main():
     df = fetch_daily()
     save_to_minio(df)
     update_bronze_view()
+
 
 if __name__ == "__main__":
     main()

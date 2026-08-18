@@ -6,6 +6,7 @@ DB_PATH = "include/data/nimbus.duckdb"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 HEADERS = {"User-Agent": "PEPluvi/1.0"}
 
+
 def get_coords(municipio: str) -> tuple[float, float] | tuple[None, None]:
     params = {
         "q": f"{municipio}, Pernambuco, Brasil",

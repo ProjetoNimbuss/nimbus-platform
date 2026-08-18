@@ -21,9 +21,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 LOG_FILE = Path(__file__).resolve().parent / "scraper.log"
 
 s3_fs = s3fs.S3FileSystem(
-    key=MINIO_ACCESS_KEY,
-    secret=MINIO_SECRET_KEY,
-    client_kwargs={"endpoint_url": MINIO_ENDPOINT}
+    key=MINIO_ACCESS_KEY, secret=MINIO_SECRET_KEY, client_kwargs={"endpoint_url": MINIO_ENDPOINT}
 )
 
 logging.basicConfig(
@@ -66,14 +64,18 @@ class ScraperAPAC:
         """Seleciona uma única mesorregião no dropdown multiselect."""
         try:
             btn_dropdown = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'ui-multiselect')]"))
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(@class, 'ui-multiselect')]")
+                )
             )
             btn_dropdown.click()
             time.sleep(1)
 
             # Desmarca todas as opções primeiro
             try:
-                btn_uncheck = self.driver.find_element(By.XPATH, "//a[contains(@class, 'ui-multiselect-none')]")
+                btn_uncheck = self.driver.find_element(
+                    By.XPATH, "//a[contains(@class, 'ui-multiselect-none')]"
+                )
                 btn_uncheck.click()
             except Exception:
                 self.driver.execute_script(
@@ -156,12 +158,13 @@ class ScraperAPAC:
                                 # Transforma a coluna em texto contínuo
                                 texto_datas = " ".join(df["Mês/Ano"].dropna().astype(str))
 
-                                #só aceita se o ano pedido aparece na tabela
+                                # só aceita se o ano pedido aparece na tabela
                                 if str(ano_esperado) in texto_datas:
-
                                     # Limpeza de colunas
                                     df.columns = [str(c).strip() for c in df.columns]
-                                    colunas_presentes = [col for col in COLUNAS_ESPERADAS if col in df.columns]
+                                    colunas_presentes = [
+                                        col for col in COLUNAS_ESPERADAS if col in df.columns
+                                    ]
                                     if len(colunas_presentes) < len(COLUNAS_ESPERADAS):
                                         return pd.DataFrame()
 
@@ -179,9 +182,11 @@ class ScraperAPAC:
                 except Exception:
                     pass
 
-                time.sleep(1) # Aguarda 1 segundo antes de olhar a tela de novo
+                time.sleep(1)  # Aguarda 1 segundo antes de olhar a tela de novo
 
-            log.warning(f"  Timeout: O site não carregou dados de {ano_esperado} a tempo ou o ano está vazio.")
+            log.warning(
+                f"  Timeout: O site não carregou dados de {ano_esperado} a tempo ou o ano está vazio."
+            )
             return pd.DataFrame()
 
         except Exception as e:
@@ -213,13 +218,17 @@ class ScraperAPAC:
         # Contagem de anos encontrados para log
         anos_encontrados = df["_ano_extraido"].dropna().unique()
         if len(anos_encontrados) == 0:
-            log.warning("  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando.")
-            return pd.DataFrame() # Rejeita!
+            log.warning(
+                "  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando."
+            )
+            return pd.DataFrame()  # Rejeita!
 
         # Se achou os anos, continua a lógica original
         anos_str = ", ".join(str(int(a)) for a in sorted(anos_encontrados))
         if ano_esperado not in anos_encontrados:
-            log.warning(f"  INCONSISTÊNCIA: Ano esperado={ano_esperado}, vieram [{anos_str}]. Descartando TODOS.")
+            log.warning(
+                f"  INCONSISTÊNCIA: Ano esperado={ano_esperado}, vieram [{anos_str}]. Descartando TODOS."
+            )
             return pd.DataFrame()
 
         df = df[df["_ano_extraido"] == ano_esperado]
@@ -233,6 +242,7 @@ class ScraperAPAC:
 def update_bronze_view():
     """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet de APAC no MinIO"""
     from pipeline.storage.duckdb_minio import get_duckdb_conn
+
     conn = get_duckdb_conn()
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 
@@ -284,7 +294,7 @@ def main():
                         storage_options = {
                             "key": MINIO_ACCESS_KEY,
                             "secret": MINIO_SECRET_KEY,
-                            "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+                            "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
                         }
                         df.to_parquet(s3_path, index=False, storage_options=storage_options)
                         log.info(f"  [OK] {ano}: {len(df)} registros salvos.")
@@ -311,4 +321,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

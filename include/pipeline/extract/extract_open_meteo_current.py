@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import requests
 import pandas as pd
 from datetime import datetime
@@ -29,8 +28,9 @@ CITIES = {
 STORAGE_OPTIONS = {
     "key": MINIO_ACCESS_KEY,
     "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
 }
+
 
 def fetch_current() -> pd.DataFrame:
     cidades = list(CITIES.keys())
@@ -49,10 +49,10 @@ def fetch_current() -> pd.DataFrame:
             "precipitation",
             "wind_speed_10m",
             "wind_direction_10m",
-            "weather_code"
+            "weather_code",
         ],
         "models": "gfs_seamless,ecmwf_ifs04",
-        "timezone": "America/Recife"
+        "timezone": "America/Recife",
     }
 
     print("[CURRENT] Requisitando dados atuais...")
@@ -78,6 +78,7 @@ def fetch_current() -> pd.DataFrame:
     df["dia"] = df["timestamp"].dt.strftime("%d")
     return df
 
+
 def save_to_minio(df: pd.DataFrame) -> str:
     if df.empty:
         print("[CURRENT] DataFrame vazio. Nenhum arquivo salvo.")
@@ -96,11 +97,12 @@ def save_to_minio(df: pd.DataFrame) -> str:
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS
+            storage_options=STORAGE_OPTIONS,
         )
 
     print(f"[CURRENT] Sucesso! Arquivos nomeados salvos em s3://{bucket}/current/")
     return f"s3://{bucket}/current/"
+
 
 def update_bronze_view():
     conn = get_duckdb_conn()
@@ -113,12 +115,16 @@ def update_bronze_view():
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
-    print(f"[CURRENT] VIEW bronze.open_meteo_current atualizada/verificada apontando para {s3_pattern}.")
+    print(
+        f"[CURRENT] VIEW bronze.open_meteo_current atualizada/verificada apontando para {s3_pattern}."
+    )
+
 
 def main():
     df = fetch_current()
     save_to_minio(df)
     update_bronze_view()
+
 
 if __name__ == "__main__":
     main()

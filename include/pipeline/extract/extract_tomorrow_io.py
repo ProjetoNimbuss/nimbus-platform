@@ -11,7 +11,7 @@ from config.settings import (
     MINIO_ACCESS_KEY,
     MINIO_SECRET_KEY,
     TOMORROW_IO_API_KEY,
-    BUCKETS
+    BUCKETS,
 )
 from pipeline.storage.duckdb_minio import get_duckdb_conn
 
@@ -25,7 +25,7 @@ POLOS_SENTINELA = {
 STORAGE_OPTIONS = {
     "key": MINIO_ACCESS_KEY,
     "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
 }
 
 HORIZONTE_HORAS = 12
@@ -42,7 +42,7 @@ def fetch_tomorrow_forecast() -> pd.DataFrame:
             "location": f"{lat},{lon}",
             "apikey": TOMORROW_IO_API_KEY,
             "units": "metric",
-            "timesteps": "1h"
+            "timesteps": "1h",
         }
 
         try:
@@ -95,7 +95,7 @@ def save_to_minio(df: pd.DataFrame) -> str:
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS
+            storage_options=STORAGE_OPTIONS,
         )
 
     print(f"[TOMORROW-IO] Sucesso! Arquivos nomeados salvos em s3://{bucket}/hourly_forecast/")
@@ -113,7 +113,9 @@ def update_bronze_view():
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
-    print(f"[TOMORROW-IO] VIEW bronze.tomorrow_io_hourly_forecast atualizada/verificada apontando para {s3_pattern}.")
+    print(
+        f"[TOMORROW-IO] VIEW bronze.tomorrow_io_hourly_forecast atualizada/verificada apontando para {s3_pattern}."
+    )
 
 
 def main():

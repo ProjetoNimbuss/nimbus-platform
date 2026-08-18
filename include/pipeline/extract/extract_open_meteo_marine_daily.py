@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import requests
 import pandas as pd
 from datetime import datetime
@@ -24,8 +23,9 @@ COASTAL_POINTS = {
 STORAGE_OPTIONS = {
     "key": MINIO_ACCESS_KEY,
     "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
 }
+
 
 def fetch_marine_daily() -> pd.DataFrame:
     pontos = list(COASTAL_POINTS.keys())
@@ -43,14 +43,16 @@ def fetch_marine_daily() -> pd.DataFrame:
             "wave_period_max",
             "swell_wave_height_max",
             "swell_wave_direction_dominant",
-            "swell_wave_period_max"
+            "swell_wave_period_max",
         ],
         "forecast_days": 5,
-        "timezone": "America/Recife"
+        "timezone": "America/Recife",
     }
 
     print("[MARINE-DAILY] Requisitando resumos diários de ondas...")
-    response = requests.get("https://marine-api.open-meteo.com/v1/marine", params=params, timeout=30)
+    response = requests.get(
+        "https://marine-api.open-meteo.com/v1/marine", params=params, timeout=30
+    )
     response.raise_for_status()
     dados = response.json()
 
@@ -68,6 +70,7 @@ def fetch_marine_daily() -> pd.DataFrame:
     df_total = pd.concat(lista_dfs, ignore_index=True)
     df_total["data_extracao"] = datetime.now().strftime("%Y-%m-%d")
     return df_total
+
 
 def save_to_minio(df_total: pd.DataFrame) -> str:
     if df_total.empty:
@@ -87,11 +90,12 @@ def save_to_minio(df_total: pd.DataFrame) -> str:
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS
+            storage_options=STORAGE_OPTIONS,
         )
 
     print(f"[MARINE-DAILY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_daily/")
     return f"s3://{bucket}/forecast_daily/"
+
 
 def update_bronze_view():
     conn = get_duckdb_conn()
@@ -104,12 +108,16 @@ def update_bronze_view():
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
-    print(f"[MARINE-DAILY] VIEW bronze.open_meteo_marine_forecast_daily atualizada/verificada apontando para {s3_pattern}.")
+    print(
+        f"[MARINE-DAILY] VIEW bronze.open_meteo_marine_forecast_daily atualizada/verificada apontando para {s3_pattern}."
+    )
+
 
 def main():
     df = fetch_marine_daily()
     save_to_minio(df)
     update_bronze_view()
+
 
 if __name__ == "__main__":
     main()

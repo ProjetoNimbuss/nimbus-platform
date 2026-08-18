@@ -3,16 +3,17 @@ import pandas as pd
 import json
 import sys
 import os
-import duckdb
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import DB_PATH, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
 from storage.duckdb_minio import get_duckdb_conn
+
 URL = "http://dados.apac.pe.gov.br:41120/cemaden/"
 
+
 def fetch_data() -> pd.DataFrame:
-    #Busca dados da API e retorna DataFrame normalizado de forma eficiente
+    # Busca dados da API e retorna DataFrame normalizado de forma eficiente
     response = requests.get(URL, timeout=30)
     response.raise_for_status()
     dados = response.json()
@@ -23,7 +24,13 @@ def fetch_data() -> pd.DataFrame:
     dados_completos = [json.loads(x) if isinstance(x, str) else {} for x in df["Dados_completos"]]
     df_norm = pd.json_normalize(dados_completos).add_prefix("dc_")
 
-    df = pd.concat([df.drop(columns=["Dados_completos"]).reset_index(drop=True), df_norm.reset_index(drop=True)], axis=1)
+    df = pd.concat(
+        [
+            df.drop(columns=["Dados_completos"]).reset_index(drop=True),
+            df_norm.reset_index(drop=True),
+        ],
+        axis=1,
+    )
 
     col_map = {
         "Data-hora": "data_hora",
@@ -51,14 +58,23 @@ def fetch_data() -> pd.DataFrame:
     df["ingestao_ts"] = datetime.now()
 
     cols = [
-        "data_hora", "estacao_nome", "codigo_gmmc", "chuva",
-        "latitude", "longitude", "cidade", "nome_estacao",
-        "tipo", "uf", "ingestao_ts"
+        "data_hora",
+        "estacao_nome",
+        "codigo_gmmc",
+        "chuva",
+        "latitude",
+        "longitude",
+        "cidade",
+        "nome_estacao",
+        "tipo",
+        "uf",
+        "ingestao_ts",
     ]
     return df[cols]
 
+
 def save_partitioned(df: pd.DataFrame) -> str:
-    #Salva o DataFrame em formato Parquet particionado pela data do dado no MinIO
+    # Salva o DataFrame em formato Parquet particionado pela data do dado no MinIO
     if df.empty:
         print("DataFrame vazio. Nenhum arquivo salvo.")
         return ""
@@ -71,21 +87,22 @@ def save_partitioned(df: pd.DataFrame) -> str:
     # Identificador de timestamp único no dia para evitar colisões de arquivos
     now = datetime.now()
     filename = f"{now.strftime('%H-%M-%S')}.parquet"
-    
+
     bucket = BUCKETS["cemaden"]
     s3_path = f"s3://{bucket}/ano={data_referencia.year}/mes={data_referencia.month:02d}/dia={data_referencia.day:02d}/{filename}"
 
     storage_options = {
         "key": MINIO_ACCESS_KEY,
         "secret": MINIO_SECRET_KEY,
-        "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+        "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
     }
 
     df.to_parquet(s3_path, index=False, storage_options=storage_options)
     return s3_path
 
+
 def update_bronze_view():
-    #Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet no MinIO
+    # Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet no MinIO
     conn = get_duckdb_conn()
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 
@@ -100,6 +117,7 @@ def update_bronze_view():
     conn.close()
     print(f"VIEW bronze.data_cemaden atualizada/verificada apontando para {s3_pattern}.")
 
+
 def executar_pipeline():
     print("Iniciando extração CEMADEN...")
     df = fetch_data()
@@ -111,6 +129,7 @@ def executar_pipeline():
     print("Atualizando VIEW no DuckDB...")
     update_bronze_view()
     print("Pipeline CEMADEN concluído.")
+
 
 if __name__ == "__main__":
     executar_pipeline()

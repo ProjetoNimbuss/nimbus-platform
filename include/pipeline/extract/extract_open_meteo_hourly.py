@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import requests
 import pandas as pd
 from datetime import datetime
@@ -29,8 +28,9 @@ CITIES = {
 STORAGE_OPTIONS = {
     "key": MINIO_ACCESS_KEY,
     "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT}
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
 }
+
 
 def fetch_hourly() -> pd.DataFrame:
     cidades = list(CITIES.keys())
@@ -48,11 +48,11 @@ def fetch_hourly() -> pd.DataFrame:
             "precipitation_probability",
             "precipitation",
             "cloud_cover",
-            "wind_speed_10m"
+            "wind_speed_10m",
         ],
         "models": "gfs_seamless,ecmwf_ifs04",
         "forecast_days": 7,
-        "timezone": "America/Recife"
+        "timezone": "America/Recife",
     }
 
     print("[HOURLY] Requisitando previsão horária...")
@@ -75,6 +75,7 @@ def fetch_hourly() -> pd.DataFrame:
     df_total["data_extracao"] = datetime.now().strftime("%Y-%m-%d")
     return df_total
 
+
 def save_to_minio(df_total: pd.DataFrame) -> str:
     if df_total.empty:
         print("[HOURLY] DataFrame vazio. Nenhum arquivo salvo.")
@@ -93,11 +94,12 @@ def save_to_minio(df_total: pd.DataFrame) -> str:
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS
+            storage_options=STORAGE_OPTIONS,
         )
 
     print(f"[HOURLY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_hourly/")
     return f"s3://{bucket}/forecast_hourly/"
+
 
 def update_bronze_view():
     conn = get_duckdb_conn()
@@ -110,12 +112,16 @@ def update_bronze_view():
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
-    print(f"[HOURLY] VIEW bronze.open_meteo_forecast_hourly atualizada/verificada apontando para {s3_pattern}.")
+    print(
+        f"[HOURLY] VIEW bronze.open_meteo_forecast_hourly atualizada/verificada apontando para {s3_pattern}."
+    )
+
 
 def main():
     df = fetch_hourly()
     save_to_minio(df)
     update_bronze_view()
+
 
 if __name__ == "__main__":
     main()
