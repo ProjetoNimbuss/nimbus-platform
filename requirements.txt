@@ -19,3 +19,8 @@ dbt-duckdb>=1.10.0
 
 # Configurações
 python-dotenv>=1.0.0
+
+# Object Storage (MinIO / S3-compatible)
+boto3>=1.34
+minio>=7.2
+s3fs>=2023.10.0

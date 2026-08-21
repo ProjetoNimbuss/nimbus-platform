@@ -1,280 +1,170 @@
-# 🌧️ PEPluvi
+<div align="center">
 
-> Pipeline de dados pluviométricos de Pernambuco — histórico (APAC) e tempo real (CEMADEN).  
-> Fonte: [APAC — Agência Pernambucana de Águas e Clima](https://www.apac.pe.gov.br)
+<img src="docs/assets/nimbus_logo.png" alt="Nimbus — Sistema de Monitoramento e Alertas" width="480"/>
 
-![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![DuckDB](https://img.shields.io/badge/DuckDB-OLAP-yellow)
-![Airflow](https://img.shields.io/badge/Airflow-orquestração-017CEE)
 
----
+### Sistema Integrado de Dados e Alertas Meteorológicos
 
-## Sobre o projeto
-
-O **PEPluvi** coleta dados de precipitação dos pluviômetros de Pernambuco, integrando dados históricos desde 1961 e monitoramento em tempo real (atualizado a cada 15 minutos).
-
-O pipeline utiliza Selenium para scraping histórico e Requests para consumo de APIs, validando a integridade dos arquivos Parquet e disponibilizando-os via DuckDB em uma arquitetura de medalhão completa (Bronze → Silver → Gold).
+**Monitoramento em tempo real · Alertas preventivos · Inteligência climática para a RMR**
 
 ---
 
-## O que já funciona
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![DuckDB](https://img.shields.io/badge/DuckDB-OLAP-FFF000?style=flat-square&logo=duckdb&logoColor=black)](https://duckdb.org)
+[![dbt](https://img.shields.io/badge/dbt-Core-FF694B?style=flat-square&logo=dbt&logoColor=white)](https://getdbt.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-Frontend-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![MinIO](https://img.shields.io/badge/MinIO-S3%20Storage-C72E49?style=flat-square&logo=minio&logoColor=white)](https://min.io)
 
-| Etapa | Fluxo | Descrição |
-|---|---|---|
-| **Scraping Histórico** | `scraping_apac.py` | Coleta automatizada (Selenium) por mesorregião/ano. Salva em **Parquet**. |
-| **API Real-time** | `pipeline_api_cemaden.py` | Coleta dados CEMADEN a cada 15 min. Salva em **Parquet (Hive)**. |
-| **Ingestão IBGE** | `ingest_muni.py` | Carga de metadados geográficos dos municípios. |
-| **Ingestão Bronze** | `ingest_duckdb.py` | Carga física dos dados históricos no DuckDB. |
-| **View Bronze** | `bronze.data_cemaden` | **VIEW dinâmica** Zero-Copy sobre os Parquets da Raw. |
-| **Silver Histórica** | `dbt run --select silver` | Deduplicação de estações, join IBGE, enriquecimento espacial e métricas sazonais. |
-| **Silver Real-time** | `data_cemaden_silver` | Deduplicação e enriquecimento dimensional dos dados de 15 min do CEMADEN. |
-| **Gold Histórica** | `dbt run --select gold` | KPIs anuais, ranking de eventos extremos, comparativo sazonal e perfil de qualidade. |
-| **Gold Real-time** | `data_cemaden_leituras_15min` | Série temporal completa das leituras de 15 min, desnormalizada, incremental. |
-| **Gold Acumulados** | `data_cemaden_acumulados` | Acumulados móveis de chuva: 15min, 1h, 3h, 6h, 12h e 24h por estação. |
-| **Qualidade de Dados** | `dbt test` | Testes de integridade: unicidade, not_null, ranges, ordenação temporal e hierarquia de janelas. |
-| **Orquestração** | Airflow | DAG diária (APAC) e a cada 15 min (CEMADEN), executando Bronze → Silver → Gold automaticamente. |
+</div>
 
 ---
 
-## Arquitetura do pipeline
+## 🌧️ O Problema
 
-### 1. Dados Históricos (APAC)
-```
-Airflow DAG (diária — 06h UTC)
-│
-├─ 1. limpa_parquet      → Remove Parquets do ano corrente
-├─ 2. scraping           → Salva Parquet por ano/mesorregião
-├─ 3. validacao          → Verifica integridade dos arquivos
-├─ 4. ingestao_duckdb    → Carga atômica na tabela bronze.monitoramento_pluviometrico
-├─ 5. dbt_run_silver     → Reconstrói silver.mapeamento_estacoes e silver.monitoramento_pluviometrico
-├─ 6. dbt_test_silver    → Valida qualidade da camada Silver
-├─ 7. dbt_run_gold       → Reconstrói gold.agregados_anuais, ranking_eventos_extremos e comparativo_sazonal
-└─ 8. dbt_test_gold      → Valida qualidade da camada Gold
-```
+A Região Metropolitana do Recife é historicamente uma das áreas mais vulneráveis a eventos climáticos extremos no Brasil. Enchentes, deslizamentos, ressacas e tempestades afetam periodicamente milhões de pessoas.
 
-### 2. Dados Real-time (CEMADEN)
-```
-Airflow DAG (a cada 15 min)
-│
-├─ 1. extrair_salvar_raw → Busca dados na API e salva Parquet com partição Hive (ano/mes/dia)
-├─ 2. atualizar_view     → Recria VIEW bronze.data_cemaden apontando para os Parquets
-├─ 3. dbt_run_cemaden    → Executa toda a linhagem (tag:cemaden): Bronze → Silver → Gold
-└─ 4. dbt_test_cemaden   → Valida qualidade de toda a linhagem CEMADEN
-```
+A fragmentação das fontes de dados climáticos (distribuídas entre APAC, CEMADEN, IBGE, APIs globais e órgãos federais), aliada à ausência de uma plataforma centralizada e acessível, cria um gargalo crítico na cadeia de alertas.
+
+**O Nimbus existe para mudar isso.**
 
 ---
 
-## Camada de dados (Medallion)
+## 🎯 O Que é o Nimbus
 
-### Fluxo Histórico (APAC)
+O **Nimbus** é uma plataforma de monitoramento e inteligência climática construída para a Região Metropolitana do Recife. Integramos dados de múltiplas fontes em uma única infraestrutura de dados, processamos em tempo real e entregamos alertas, previsões e análises históricas.
 
-| Camada | Localização | Formato | Descrição |
-|---|---|---|---|
-| **Raw** | `include/data/raw/*.parquet` | Parquet | Arquivos brutos por ano/mesorregião. |
-| **Bronze** | `bronze.monitoramento_pluviometrico` | DuckDB Table | Dados históricos carregados fisicamente. |
-| **Silver** | `silver.mapeamento_estacoes` | DuckDB Table | Dimensão de estações deduplicadas (APAC + IBGE), com lat/lon. |
-| **Silver** | `silver.monitoramento_pluviometrico` | DuckDB Table | OBT enriquecida: `codigo_estacao`, `precipitacao_mm`, `mesorregiao`, alertas e médias móveis. |
-| **Gold** | `gold.agregados_anuais` | DuckDB Table | Total anual, média histórica, desvio e classificação do ano (Seco/Normal/Chuvoso). |
-| **Gold** | `gold.ranking_eventos_extremos` | DuckDB Table | Eventos diários classificados por percentil e severidade. |
-| **Gold** | `gold.comparativo_sazonal` | DuckDB View | Comparativo mensal: ano corrente vs média dos últimos 5 anos, por mesorregião. |
-| **Gold** | `gold.qualidade_estacoes` | DuckDB Table | Score de confiança, % preenchimento, % nulos e categoria por estação. |
-
-### Fluxo Real-time (CEMADEN)
-
-| Camada | Localização | Formato | Descrição |
-|---|---|---|---|
-| **Raw** | `include/data/raw/api_cemaden/` | Parquet | Particionamento Hive: `ano=Y/mes=M/dia=D/HH-MM-SS.parquet`. Event-time partitioning. |
-| **Bronze** | `bronze.data_cemaden` | DuckDB View | View Zero-Copy dinâmica sobre os Parquets da Raw. |
-| **Silver** | `silver.data_cemaden_silver` | DuckDB Table | Leituras deduplicadas e enriquecidas dimensionalmente (nome, município, lat/lon, IBGE). |
-| **Gold** | `gold.data_cemaden_leituras_15min` | DuckDB Table | Série temporal completa desnormalizada. Incremental com lookback de 24h (late data). |
-| **Gold** | `gold.data_cemaden_acumulados` | DuckDB Table | Acumulados móveis por janela (15min/1h/3h/6h/12h/24h). Incremental com lookback de 24h. |
+> *Nimbus é a palavra latina para nuvem de tempestade, a nuvem que anuncia a chuva antes que ela chegue.*
 
 ---
 
-## Setup
+## 📦 O Que Entregamos
 
-### Pré-requisitos
+### 🔴 Monitoramento em Tempo Real
+Leitura contínua de temperatura, umidade, precipitação e velocidade do vento para os **14 municípios da RMR**, alimentada por modelos globais de alta resolução (GFS e ECMWF).
 
-- Python 3.11+
-- [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli) (para Airflow local)
-- Docker
-- Google Chrome (para o Selenium no scraping histórico)
+### ⚠️ Alertas Preventivos
+Sistema de alertas baseado em limiares configuráveis para eventos extremos: **enchentes, tempestades severas e ressacas**. Os alertas são emitidos com antecedência, permitindo ação antes do impacto.
 
-### Instalação
+### 🌊 Previsão Oceânica e Costeira
+Monitoramento de condições marinhas, altura e período de ondas, swell e correntes, isso em **9 pontos costeiros da RMR**, incluindo Porto do Recife, Porto de Suape e as principais praias urbanas.
 
-```bash
-# Clone e entre no projeto
-git clone https://github.com/IgorTiburcio81/PEPluvi.git
-cd PEPluvi
+### 📅 Histórico Climático desde 1961
+Acesso à série histórica de pluviometria de Pernambuco (dados APAC), abrangendo **5 mesorregiões** do estado desde 1961. Base fundamental para análise de tendências e dimensionamento de riscos.
 
-# Setup do ambiente
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+### 🧑‍🤝‍🧑 Vulnerabilidade Sociodemográfica
+Correlação dos dados climáticos com informações demográficas e domiciliares do **Censo IBGE 2022 por bairro**, permitindo identificar e priorizar áreas de maior vulnerabilidade social a eventos extremos.
 
-### Subindo o Airflow (Astro CLI)
+### 📍 Reports de Condições pelos Usuários
+Canal direto para que cidadãos e equipes de campo reportem condições climáticas e riscos em tempo real, enriquecendo os dados com informações de contexto local.
 
-```bash
-# Inicia os containers Docker do Airflow
-astro dev start
-
-# A UI do Airflow estará disponível em http://localhost:8080
-```
+### 📊 Dashboard Público
+Interface visual acessível para consulta de condições atuais, previsões e histórico climático da RMR.
 
 ---
 
-## Como usar
+## 🗄️ Fontes de Dados
 
-### Consultando os dados (DuckDB)
+O Nimbus agrega dados de fontes abertas, oficiais e especializadas:
 
-```sql
--- Histórico diário de chuvas (Silver)
-SELECT codigo_estacao, nome_estacao, data, precipitacao_mm, mesorregiao, alerta_chuva
-FROM silver.monitoramento_pluviometrico
-WHERE ano = 2024
-ORDER BY precipitacao_mm DESC
-LIMIT 20;
-
--- KPIs anuais por estação (Gold)
-SELECT codigo_estacao, nome_estacao, municipio, mesorregiao, ano,
-       total_anual_mm, classificacao_ano, desvio_historico_pct
-FROM gold.agregados_anuais
-WHERE ano = 2024
-ORDER BY total_anual_mm DESC;
-
--- Estado atual das estações em tempo real (Gold — última leitura de cada estação)
-SELECT estacao_codigo, nome_estacao, municipio, data_hora,
-       chuva_15min, chuva_1h, chuva_3h, chuva_6h, chuva_12h, chuva_24h
-FROM gold.data_cemaden_acumulados
-QUALIFY ROW_NUMBER() OVER (PARTITION BY estacao_codigo ORDER BY data_hora DESC) = 1;
-
--- Série temporal das leituras de 15 min de uma estação (últimas 24h)
-SELECT data_hora, chuva, nome_estacao, municipio
-FROM gold.data_cemaden_leituras_15min
-WHERE estacao_codigo = '261160600A'
-  AND data_hora >= NOW() - INTERVAL '24 hours'
-ORDER BY data_hora;
-
--- Comparativo sazonal do ano corrente (Gold — VIEW atualizada automaticamente)
-SELECT mes, mesorregiao, precipitacao_ano_atual_mm, media_5anos_mm,
-       desvio_vs_media_5anos_pct, status_sazonal
-FROM gold.comparativo_sazonal
-ORDER BY mesorregiao, mes;
-```
-
-### Execução manual (sem Airflow)
-
-```bash
-# 1. Coletar dados da APAC (salva Parquets em include/data/raw/)
-make extract
-
-# 2. Validar os Parquets
-python include/pipeline/extract/valid_data.py
-
-# 3. Ingerir no DuckDB (carga completa)
-make load
-
-# 3b. Ingerir apenas um ano específico (carga incremental)
-python include/pipeline/load/ingest_duckdb.py 2026
-
-# 4. Transformar (Silver → Gold — histórico)
-cd transform
-dbt run --select silver gold
-dbt test --select silver gold
-
-# 5. Executar o pipeline CEMADEN manualmente (Bronze → Silver → Gold)
-python include/pipeline/extract/pipeline_api_cemaden.py
-cd transform
-dbt run --select tag:cemaden
-dbt test --select tag:cemaden
-```
-
-> A carga histórica completa (1961 → hoje, todas as mesorregiões) leva várias horas. O scraper salva um Parquet por ano/mesorregião em `include/data/raw/`, então se cair, basta rodar de novo — os já coletados são pulados automaticamente.
-
-### Execução orquestrada (Airflow)
-
-Após subir o Airflow com `astro dev start`, duas DAGs ficam ativas:
-
-- **`pipeline_pepluvi`** — Roda todos os dias às **06h UTC**: scraping incremental do ano corrente, carga no DuckDB e reconstrução completa das camadas Silver e Gold históricas.
-- **`pipeline_api_cemaden`** — Roda a cada **15 minutos**: extração da API CEMADEN, gravação em Parquet particionado e execução incremental de toda a linhagem CEMADEN (Bronze → Silver → Gold).
+| Fonte | Tipo | Dados |
+| :--- | :--- | :--- |
+| **Open-Meteo** | API Gratuita | Condições atuais e previsão meteorológica (7 dias) |
+| **Open-Meteo Marine** | API Gratuita | Condições oceânicas e previsão de ondas (5 dias) |
+| **Tomorrow.io** | API (Freemium) | Nowcasting e previsão de alta precisão (12h) |
+| **CEMADEN / APAC** | API Interna | Telemetria pluviométrica em tempo real — PE |
+| **APAC PE** | Web Scraping | Série histórica pluviométrica desde 1961 |
+| **IBGE Censo 2022** | Carga Estática | Dados demográficos e domiciliares por bairro |
+| **IBGE GPKG** | Carga Estática | Malha vetorial de bairros de Pernambuco |
+| **REINDESC** | Carga Estática | Histórico de ocorrências de desastres naturais |
 
 ---
 
-## Estrutura do repositório
+## 🏗️ Arquitetura
+
+O Nimbus é construído sobre uma arquitetura **Medallion** (Raw → Bronze → Silver → Gold), com infraestrutura local hoje e migração planejada para GCP e MagaluCloud.
 
 ```
-PEPluvi/
-├── dags/
-│   ├── pipeline_pepluvi.py           # DAG diária: scraping + dbt Silver + Gold histórico
-│   └── pipeline_api_cemaden.py       # DAG real-time (15 min): API CEMADEN → Bronze → Silver → Gold
+Fontes Externas (APIs, Scraping, Arquivos)
+        │
+        ▼
+   📦 Data Lake — MinIO S3 (Parquet + Hive Partitioning)
+        │
+        ▼
+   🥉 Bronze — DuckDB (nimbus.duckdb)
+   VIEWs sobre S3 + Tabelas físicas para dados estáticos
+        │
+        ▼
+   🥈 Silver — dbt Core
+   Limpeza, padronização, enriquecimento
+        │
+        ▼
+   🥇 Gold — dbt Core
+   Métricas, agregações, datasets analíticos
+        │
+        ▼
+   ⚡ FastAPI          🌐 Next.js
+   (API REST)          (Dashboards Públicos)
+```
+
+**Stack completa:**
+- **Ingestão:** Python 3.12, requests, pandas, selenium, pyarrow, s3fs
+- **Storage:** MinIO (local) → Google Cloud Storage (nuvem)
+- **Banco Analítico:** DuckDB → BigQuery (GCP)
+- **Transformação:** dbt Core
+- **Orquestração:** Prefect *(em implantação)*
+- **API:** FastAPI
+- **Frontend:** Next.js
+- **Nuvem:** GCP (BigQuery, GCS, Cloud Run) + MagaluCloud (VM )
+
+---
+
+## 📚 Documentação
+
+| Documento | Descrição |
+| :--- | :--- |
+| [Arquitetura de Dados](docs/arquitetura_dados.md) | Stack, ferramentas, justificativas e plano de migração para nuvem |
+| [Ingestão de Dados — Bronze](docs/ingestao_dados_bronze.md) | Fontes, scripts, buckets, views e tabelas da camada Bronze |
+
+---
+
+## 🗂️ Estrutura do Repositório
+
+```
+rmr-alertas/
+├── dags/               # DAGs de orquestração (Airflow → Prefect)
+├── docs/               # Documentação técnica
 ├── include/
-│   ├── config/
-│   │   └── settings.py               # constantes de caminho e URL
-│   ├── data/                         # NÃO versionado (.gitignore)
-│   │   ├── raw/                      # Parquets históricos e api_cemaden/ (Hive partitioned)
-│   │   └── pepluvi.duckdb            # banco OLAP local (schemas: bronze, silver, gold)
+│   ├── config/         # Configurações centralizadas (.env)
+│   ├── data/           # nimbus.duckdb (local)
 │   └── pipeline/
-│       ├── extract/
-│       │   ├── scraping_apac.py      # scraper Selenium → Parquet histórico
-│       │   ├── pipeline_api_cemaden.py  # API CEMADEN → Parquet Hive + VIEW Bronze
-│       │   ├── ingest_muni.py        # API IBGE → DuckDB
-│       │   └── valid_data.py         # validação de integridade dos Parquets
-│       └── load/
-│           └── ingest_duckdb.py      # ETL Parquet → DuckDB bronze
-└── transform/                        # modelagem dbt
-    ├── dbt_project.yml               # configurações globais do dbt
-    ├── packages.yml                  # dbt-utils
-    ├── macros/
-    │   ├── clean_string.sql          # normalização de strings (remove acentos)
-    │   ├── percentile_rank.sql       # encapsula PERCENT_RANK() para reutilização
-    │   └── generate_schema_name.sql
-    ├── models/
-    │   ├── bronze/
-    │   │   ├── sources.yml           # declaração das fontes Bronze
-    │   │   ├── brz_api_cemaden.sql   # model dbt sobre os Parquets da Raw CEMADEN
-    │   │   └── stg_ibge_municipios_pe.sql
-    │   ├── silver/
-    │   │   ├── schema.yml            # testes Silver
-    │   │   ├── mapeamento_estacoes.sql
-    │   │   ├── monitoramento_pluviometrico.sql
-    │   │   └── data_cemaden_silver.sql  # Silver real-time: deduplicado + enriquecido
-    │   └── gold/
-    │       ├── schema.yml            # testes Gold
-    │       ├── agregados_anuais.sql
-    │       ├── ranking_eventos_extremos.sql
-    │       ├── comparativo_sazonal.sql
-    │       ├── qualidade_estacoes.sql
-    │       ├── data_cemaden_leituras_15min.sql  # Gold: série temporal incremental
-    │       └── data_cemaden_acumulados.sql      # Gold: acumulados móveis incrementais
-    └── tests/
-        └── cemaden/                  # testes singulares dbt do domínio CEMADEN
-            ├── assert_data_cemaden_leituras_increasing.sql
-            ├── assert_data_cemaden_consecutive_15min.sql
-            └── assert_data_cemaden_janelas_integridade.sql
+│       ├── extract/    # Scripts de extração por fonte
+│       └── storage/    # Utilitários MinIO & DuckDB
+├── rmr-api/            # Backend FastAPI
+├── rmr-web/            # Frontend Next.js
+└── transform/          # Modelos dbt (Silver & Gold)
 ```
 
 ---
 
-## Próximos passos
+## 🚀 Status do Projeto
 
-- **API / Backend** — Endpoints REST consumindo `gold.data_cemaden_leituras_15min` e `gold.data_cemaden_acumulados` para alimentar a aplicação web em tempo real.
-- **Dashboards (Metabase / Superset)** — Visualizações interativas com mapas e séries temporais consumindo as tabelas Gold.
-- **Alertas automáticos** — Notificações via Slack/Telegram quando eventos extremos forem detectados no pipeline.
-
----
-
-## Referências
-
-- [APAC — Monitoramento Pluviométrico](http://old.apac.pe.gov.br/meteorologia/monitoramento-pluvio.php)
-- [DuckDB - Parquet & Hive Partitioning](https://duckdb.org/docs/data/parquet/hive_partitioning)
-- [Apache Parquet](https://parquet.apache.org/)
-- [Selenium](https://www.selenium.dev/documentation/)
-- [Astronomer (Astro CLI)](https://www.astronomer.io/docs/astro/cli/overview)
-- [Apache Airflow](https://airflow.apache.org/docs/)
-- [dbt — Data Build Tool](https://docs.getdbt.com/)
+| Componente | Status |
+| :--- | :--- |
+| Ingestão de dados (Bronze) | ✅ Implementado |
+| Data Lake (MinIO) | ✅ Implementado |
+| Camada Silver/Gold (dbt) | 🔄 Em desenvolvimento |
+| Orquestração (Prefect) | 📋 Planejado |
+| API (FastAPI) | 🔄 Em desenvolvimento |
+| Dashboard (Next.js) | 🔄 Em desenvolvimento |
+| Migração GCP/MagaluCloud | 📋 Planejado |
 
 ---
 
-*Projeto: PEPluvi — Igor Tiburcio · Iniciado em abril de 2026*
+<div align="center">
+
+**Nimbus · Região Metropolitana do Recife · 2026**
+
+*Dados que salvam vidas.*
+
+</div>

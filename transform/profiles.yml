@@ -3,4 +3,4 @@ pepluvi:
   outputs:
     dev:
       type: duckdb
-      path: ../include/data/pepluvi.duckdb
+      path: ../include/data/nimbus.duckdb

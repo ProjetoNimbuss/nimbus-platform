@@ -13,15 +13,16 @@ from selenium.common.exceptions import TimeoutException
 from io import StringIO
 import sys
 import os
+from config.settings import BASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+import s3fs
 
-# Adiciona o diretório raiz ao PYTHONPATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import BASE_URL, RAW_DIR
 
-OUTPUT_DIR = RAW_DIR
 LOG_FILE = Path(__file__).resolve().parent / "scraper.log"
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+s3_fs = s3fs.S3FileSystem(
+    key=MINIO_ACCESS_KEY, secret=MINIO_SECRET_KEY, client_kwargs={"endpoint_url": MINIO_ENDPOINT}
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,7 +39,7 @@ MESORREGIOES = {
     2601: "Sertao_Pernambucano",
 }
 
-# Colunas obrigatórias que a tabela de dados real deve conter
+# Colunas obrigatórias que a tabela de deve conter
 COLUNAS_ESPERADAS = ["Código", "Posto", "Mês/Ano"]
 
 
@@ -63,14 +64,18 @@ class ScraperAPAC:
         """Seleciona uma única mesorregião no dropdown multiselect."""
         try:
             btn_dropdown = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'ui-multiselect')]"))
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(@class, 'ui-multiselect')]")
+                )
             )
             btn_dropdown.click()
             time.sleep(1)
 
             # Desmarca todas as opções primeiro
             try:
-                btn_uncheck = self.driver.find_element(By.XPATH, "//a[contains(@class, 'ui-multiselect-none')]")
+                btn_uncheck = self.driver.find_element(
+                    By.XPATH, "//a[contains(@class, 'ui-multiselect-none')]"
+                )
                 btn_uncheck.click()
             except Exception:
                 self.driver.execute_script(
@@ -153,12 +158,13 @@ class ScraperAPAC:
                                 # Transforma a coluna em texto contínuo
                                 texto_datas = " ".join(df["Mês/Ano"].dropna().astype(str))
 
-                                #só aceita se o ano pedido aparece na tabela
+                                # só aceita se o ano pedido aparece na tabela
                                 if str(ano_esperado) in texto_datas:
-
                                     # Limpeza de colunas
                                     df.columns = [str(c).strip() for c in df.columns]
-                                    colunas_presentes = [col for col in COLUNAS_ESPERADAS if col in df.columns]
+                                    colunas_presentes = [
+                                        col for col in COLUNAS_ESPERADAS if col in df.columns
+                                    ]
                                     if len(colunas_presentes) < len(COLUNAS_ESPERADAS):
                                         return pd.DataFrame()
 
@@ -176,9 +182,11 @@ class ScraperAPAC:
                 except Exception:
                     pass
 
-                time.sleep(1) # Aguarda 1 segundo antes de olhar a tela de novo
+                time.sleep(1)  # Aguarda 1 segundo antes de olhar a tela de novo
 
-            log.warning(f"  Timeout: O site não carregou dados de {ano_esperado} a tempo ou o ano está vazio.")
+            log.warning(
+                f"  Timeout: O site não carregou dados de {ano_esperado} a tempo ou o ano está vazio."
+            )
             return pd.DataFrame()
 
         except Exception as e:
@@ -210,13 +218,17 @@ class ScraperAPAC:
         # Contagem de anos encontrados para log
         anos_encontrados = df["_ano_extraido"].dropna().unique()
         if len(anos_encontrados) == 0:
-            log.warning("  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando.")
-            return pd.DataFrame() # Rejeita!
+            log.warning(
+                "  Não foi possível identificar o formato de ano na coluna 'Mês/Ano'. Descartando."
+            )
+            return pd.DataFrame()  # Rejeita!
 
         # Se achou os anos, continua a lógica original
         anos_str = ", ".join(str(int(a)) for a in sorted(anos_encontrados))
         if ano_esperado not in anos_encontrados:
-            log.warning(f"  INCONSISTÊNCIA: Ano esperado={ano_esperado}, vieram [{anos_str}]. Descartando TODOS.")
+            log.warning(
+                f"  INCONSISTÊNCIA: Ano esperado={ano_esperado}, vieram [{anos_str}]. Descartando TODOS."
+            )
             return pd.DataFrame()
 
         df = df[df["_ano_extraido"] == ano_esperado]
@@ -227,7 +239,25 @@ class ScraperAPAC:
         self.driver.quit()
 
 
-# Main
+def update_bronze_view():
+    """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet de APAC no MinIO"""
+    from pipeline.storage.duckdb_minio import get_duckdb_conn
+
+    conn = get_duckdb_conn()
+    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
+
+    bucket = BUCKETS.get("apac", "web-scraping-apac")
+    s3_pattern = f"s3://{bucket}/*.parquet"
+
+    conn.execute(f"""
+        CREATE OR REPLACE VIEW bronze.apac_historico AS
+        SELECT * FROM read_parquet('{s3_pattern}')
+    """)
+
+    conn.close()
+    print(f"[APAC] VIEW bronze.apac_historico atualizada/verificada apontando para {s3_pattern}.")
+
+
 def main():
     ano_inicio = 1961
     ano_fim = date.today().year
@@ -244,8 +274,8 @@ def main():
             scraper.selecionar_mesorregiao(cod_id)
 
             for ano in range(ano_inicio, ano_fim + 1):
-                arquivo_parquet = OUTPUT_DIR / f"{nome_meso}_{ano}.parquet"
-                if arquivo_parquet.exists():
+                s3_path = f"s3://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
+                if s3_fs.exists(s3_path):
                     continue
 
                 d_ini = f"01/01/{ano}"
@@ -261,7 +291,12 @@ def main():
                     if not df.empty:
                         df["mesorregiao_id"] = cod_id
                         df["ano_ref"] = ano
-                        df.to_parquet(arquivo_parquet, index=False)
+                        storage_options = {
+                            "key": MINIO_ACCESS_KEY,
+                            "secret": MINIO_SECRET_KEY,
+                            "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
+                        }
+                        df.to_parquet(s3_path, index=False, storage_options=storage_options)
                         log.info(f"  [OK] {ano}: {len(df)} registros salvos.")
                     else:
                         log.warning(f"  [!] {ano}: Sem dados válidos para este ano.")
@@ -277,6 +312,8 @@ def main():
                     except Exception as e2:
                         log.error(f"Falha ao recuperar após erro: {e2}")
                     time.sleep(2)
+
+        update_bronze_view()
 
     finally:
         scraper.fechar()

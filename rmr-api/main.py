@@ -8,10 +8,11 @@ from contextlib import asynccontextmanager
 
 app = FastAPI(title="Sistema de Alertas Climáticos - RMR", version="1.0.0")
 
-DB_PATH = Path(__file__).parent.parent / "include" / "data" / "pepluvi.duckdb"
+DB_PATH = Path(__file__).parent.parent / "include" / "data" / "nimbus.duckdb"
 
 # Global connection
 global_conn = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +26,16 @@ async def lifespan(app: FastAPI):
 
     # Cria uma materialized view (tabela em memória) a partir dos parquets do CEMADEN
     # Usando o caminho absoluto baseado no DB_PATH para achar a pasta data
-    data_path = DB_PATH.parent.parent.parent / "data" / "raw" / "api_cemaden" / "*" / "*" / "*" / "*.parquet"
+    data_path = (
+        DB_PATH.parent.parent.parent
+        / "data"
+        / "raw"
+        / "api_cemaden"
+        / "*"
+        / "*"
+        / "*"
+        / "*.parquet"
+    )
     try:
         global_conn.execute(f"""
             CREATE TABLE cemaden_data AS
@@ -41,27 +51,34 @@ async def lifespan(app: FastAPI):
     if global_conn:
         global_conn.close()
 
+
 app.router.lifespan_context = lifespan
 
 # Permite que o frontend (Next.js) faça requisições para a API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Na produção, coloque a URL real do frontend, ex: ["http://localhost:3000"]
+    allow_origins=[
+        "*"
+    ],  # Na produção, coloque a URL real do frontend, ex: ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 def get_db():
     return global_conn
+
 
 @app.get("/")
 def read_root():
     return {"message": "API do Sistema de Alertas Climáticos - RMR operando."}
 
+
 # ==========================================
 # Endpoints usados atualmente pelo Frontend
 # ==========================================
+
 
 @app.get("/api/v1/alertas")
 def get_alertas():
@@ -72,7 +89,12 @@ def get_alertas():
         return [
             {"id": 1, "municipio": "Recife", "nivel_alerta": "Atenção 🟡", "atualizacao": agora},
             {"id": 2, "municipio": "Olinda", "nivel_alerta": "Atenção 🟡", "atualizacao": agora},
-            {"id": 3, "municipio": "Jaboatão dos Guararapes", "nivel_alerta": "Alerta 🟠", "atualizacao": agora},
+            {
+                "id": 3,
+                "municipio": "Jaboatão dos Guararapes",
+                "nivel_alerta": "Alerta 🟠",
+                "atualizacao": agora,
+            },
         ]
 
     try:
@@ -83,41 +105,59 @@ def get_alertas():
         return [dict(zip(columns, row)) for row in res.fetchall()]
     except duckdb.CatalogException:
         # Caso a tabela gold_grid_risk não exista ainda
-        return [{"id": 0, "municipio": "Erro", "nivel_alerta": "Tabela gold não encontrada", "atualizacao": ""}]
+        return [
+            {
+                "id": 0,
+                "municipio": "Erro",
+                "nivel_alerta": "Tabela gold não encontrada",
+                "atualizacao": "",
+            }
+        ]
     except Exception as e:
         return [{"id": 0, "municipio": "Erro Interno", "nivel_alerta": str(e), "atualizacao": ""}]
+
 
 # ==========================================
 # Endpoints da Etapa 2 (Planejados)
 # ==========================================
 
+
 @app.get("/api/v1/grid")
 def get_grid():
-    return {"message": "Lista de 48 células com coordenadas, nível de alerta atual e índice de risco."}
+    return {
+        "message": "Lista de 48 células com coordenadas, nível de alerta atual e índice de risco."
+    }
+
 
 @app.get("/api/v1/grid/{cell_id}/risk")
 def get_grid_risk(cell_id: int):
     return {"cell_id": cell_id, "message": "Detalhamento do índice de risco (variáveis e pesos)."}
 
+
 @app.get("/api/v1/grid/{cell_id}/population")
 def get_grid_population(cell_id: int):
     return {"cell_id": cell_id, "message": "População exposta na célula."}
+
 
 @app.get("/api/v1/rivers/levels")
 def get_rivers_levels():
     return {"message": "Cotas atuais dos 3 rios monitorados."}
 
+
 @app.get("/api/v1/tides/current")
 def get_tides_current():
     return {"message": "Tábua de marés atual do Porto do Recife."}
+
 
 @app.get("/api/v1/municipalities/{municipality_id}/risk")
 def get_municipality_risk(municipality_id: int):
     return {"municipality_id": municipality_id, "message": "Risco agregado por município."}
 
+
 # ==========================================
 # Endpoints CEMADEN (Integração Parquet)
 # ==========================================
+
 
 @app.get("/api/v1/stations")
 def get_stations():
@@ -138,6 +178,7 @@ def get_stations():
     except Exception as e:
         return [{"error": str(e)}]
 
+
 @app.get("/api/v1/stations/{station_id}/precipitation")
 def get_station_precipitation(station_id: str):
     conn = get_db()
@@ -157,4 +198,3 @@ def get_station_precipitation(station_id: str):
         return [dict(zip(columns, row)) for row in res.fetchall()]
     except Exception as e:
         return [{"error": str(e)}]
-

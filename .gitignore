@@ -92,5 +92,10 @@ transform/logs/
 *.duckdb.wal
 *.tmp/
 
-# Documentação local (ADRs, Runbooks — não versionado)
-docs/
+# Prefect
+.prefect/
+
+# Testes & Cobertura
+.pytest_cache/
+.coverage
+htmlcov/
