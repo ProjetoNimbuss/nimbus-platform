@@ -1,0 +1,36 @@
+name: Auto Tag and Delete Branch on Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  auto-tag-and-cleanup:
+    # Só roda se o PR foi realmente "merged" e não apenas fechado e recusado
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necessário para ler o histórico de tags
+      
+      - name: Bump Version e Criação da Tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch # Se não especificado (major/minor), aumenta o patch (v1.0.0 -> v1.0.1)
+          
+      - name: Deletar Branch de Origem (Head Branch)
+        uses: dawidd6/action-delete-branch@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: ${{ github.event.pull_request.head.ref }}

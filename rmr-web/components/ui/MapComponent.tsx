@@ -62,7 +62,8 @@ export default function MapComponent({ selectedSlug }: { selectedSlug?: string |
 
   useEffect(() => {
     // Fetch das estações
-    fetch("http://localhost:8000/api/v1/stations")
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${apiUrl}/api/v1/stations`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -76,7 +77,8 @@ export default function MapComponent({ selectedSlug }: { selectedSlug?: string |
   const handleMarkerClick = (station: Station) => {
     setSelectedStation(station);
     setLoadingPrecip(true);
-    fetch(`http://localhost:8000/api/v1/stations/${station.id}/precipitation`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${apiUrl}/api/v1/stations/${station.id}/precipitation`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

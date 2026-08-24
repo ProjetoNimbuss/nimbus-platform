@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  api:
+    image: python:3.11-slim
+    container_name: nimbus_api
+    # Mapeamos a raiz inteira para /app para que o script python (main.py)
+    # consiga encontrar os arquivos do banco de dados na pasta /include/...
+    volumes:
+      - .:/app
+    working_dir: /app/rmr-api
+    command: >
+      bash -c "apt-get update && apt-get install -y gcc && pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  web:
+    image: node:20-alpine
+    container_name: nimbus_web
+    volumes:
+      - ./rmr-web:/app
+      - nimbus_node_modules:/app/node_modules
+      - nimbus_next_build:/app/.next
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "8080:3000"  # Mapeia a porta 8080 do seu Windows (localhost:8080) para a 3000 do Next.js
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000 # O Frontend rodando no navegador do Windows vai acessar o localhost:8000
+    depends_on:
+      - api
+
+volumes:
+  nimbus_node_modules:
+  nimbus_next_build:
