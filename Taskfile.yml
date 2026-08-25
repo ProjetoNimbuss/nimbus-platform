@@ -1,0 +1,111 @@
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  default:
+    desc: Exibe a lista de todos os comandos disponíveis
+    cmds:
+      - task --list
+
+  # Docker
+  up:
+    desc: Subir TODOS os serviços do projeto (Docker Compose)
+    cmds:
+      - docker-compose up -d
+      - task: status
+
+  down:
+    desc: Parar TODOS os serviços do Docker
+    cmds:
+      - docker-compose down
+
+  restart:
+    desc: Reiniciar todos os containers
+    cmds:
+      - docker compose restart
+
+  status:
+    desc: Ver o status dos containers em execução
+    cmds:
+      - docker-compose ps
+
+  logs:
+    desc: Acompanhar os logs de todos os containers em tempo real
+    cmds:
+      - docker-compose logs -f
+
+  # Docker isolado
+  up:minio:
+    desc: Subir apenas o Data Lake (MinIO S3)
+    cmds:
+      - docker-compose up -d minio
+
+  up:postgres:
+    desc: Subir apenas o Banco de Dados Relacional (PostgreSQL)
+    cmds:
+      - docker-compose up -d postgre
+
+  up:api:
+    desc: Subir apenas a Backend API (Laravel)
+    cmds:
+      - docker-compose up -d api
+
+  web:up: # alias para subida isolada do frontend
+  up:web:
+    desc: Subir apenas o Frontend (Next.js)
+    cmds:
+      - docker-compose up -d web
+
+  up:prefect:
+    desc: Subir apenas o Orquestrador Prefect (Server + Worker)
+    cmds:
+      - docker-compose up -d prefect-server prefect-worker
+
+  #  Setup
+  setup:
+    desc: Setup inicial completo do projeto (Subir infra + Buckets MinIO + Migrations)
+    cmds:
+      - task: up
+      - task: setup-storage
+      - task: migrate
+
+  setup-storage:
+    desc: Provisionar os buckets S3 no MinIO local
+    cmds:
+      - python pipeline/storage/setup_minio.py
+
+  # BACKEND 
+  migrate:
+    desc: Rodar as migrations do banco de dados relacional no Laravel
+    cmds:
+      - docker-compose exec api php artisan migrate --force
+
+  seed:
+    desc: Alimentar o banco relacional com dados de teste (Seeders Laravel)
+    cmds:
+      - docker-compose exec api php artisan db:seed
+
+  # Workflow e DBT
+  dbt-run:
+    desc: Executar as transformações de dados dbt (Silver e Gold)
+    cmds:
+      - cd transform && dbt run
+
+  dbt-test:
+    desc: Executar os testes de qualidade de dados no dbt
+    cmds:
+      - cd transform && dbt test
+
+  # Lint
+  lint:
+    desc: Executar o linter Ruff nos scripts Python
+    cmds:
+      - ruff check .
+
+  install:
+    desc: Instalar dependências Python e pre-commit locais
+    cmds:
+      - pip install -r requirements.txt
+      - pip install ruff pre-commit
+      - pre-commit install

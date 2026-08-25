@@ -1,8 +1,11 @@
+# Ingestão & APIs
+requests>=2.31.0
+
 # Scraping
 selenium>=4.20
 beautifulsoup4>=4.12
 
-# Dados
+# Dados & Processamento
 pandas>=2.0
 numpy>=1.26
 duckdb>=1.0
@@ -10,15 +13,14 @@ pyarrow>=14.0
 
 # Utilidades
 lxml>=5.0
+python-dotenv>=1.0.0
 
 # Transformação (dbt)
 dbt-duckdb>=1.10.0
 
-# Orquestração (Airflow via Astro CLI)
-# apache-airflow>=2.9
-
-# Configurações
-python-dotenv>=1.0.0
+# Orquestração (Prefect)
+prefect>=3.0.0
+prefect-dbt>=0.6.0
 
 # Object Storage (MinIO / S3-compatible)
 boto3>=1.34
