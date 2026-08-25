@@ -98,7 +98,7 @@ flowchart LR
 | **Uso no Projeto**       | Substituirá os DAGs do Airflow para agendar e monitorar a execução dos scripts de extração e transformação.                                         |
 | **Justificativa**        | API Pythônica, fácil deployment local (Prefect Server) e suporte nativo a execução em nuvem (Prefect Cloud) sem necessidade de reescrita dos flows. |
 | **Equivalente em Nuvem** | Prefect Cloud (gerenciado), mantendo os mesmos flows Python.                                                                                        |
-| **Status**               | Planejado — substituindo Airflow (dags/ ainda presente no repositório).                                                                             |
+| **Status**               | Planejado — substituindo Airflow (detalhes no documento [Melhorias de Docker e Orquestração](file:///home/igortiburcio/Projetos/nimbus-platform/docs/melhorias_docker_e_orquestracao.md)). |
 
 ### 3.5 Extração de Dados — Python (scripts modulares)
 
