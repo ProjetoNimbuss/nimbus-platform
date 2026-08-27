@@ -131,18 +131,23 @@ Fontes Externas (APIs, Scraping, Arquivos)
 ## 🗂️ Estrutura do Repositório
 
 ```
-rmr-alertas/
-├── dags/               # DAGs de orquestração (Airflow → Prefect)
-├── docs/               # Documentação técnica
-├── include/
-│   ├── config/         # Configurações centralizadas (.env)
-│   ├── data/           # nimbus.duckdb (local)
-│   └── pipeline/
-│       ├── extract/    # Scripts de extração por fonte
-│       └── storage/    # Utilitários MinIO & DuckDB
-├── rmr-api/            # Backend FastAPI
-├── rmr-web/            # Frontend Next.js
-└── transform/          # Modelos dbt (Silver & Gold)
+nimbus-platform/
+├── api/            # Backend (Laravel)
+├── docs/           # Documentação técnica e assets
+├── flows/          # Orquestração de pipelines (Prefect)
+├── pipeline/       # Ingestão de dados por fonte
+│   ├── config/     # Configurações centralizadas
+│   ├── extract/    # Scripts de extração (Open-Meteo, CEMADEN, APAC, IBGE…)
+│   └── storage/    # Utilitários MinIO & DuckDB
+├── transform/      # Modelos dbt
+│   └── models/
+│       ├── bronze/ # Staging e fontes brutas
+│       ├── silver/ # Limpeza e padronização
+│       └── gold/   # Métricas e agregações analíticas
+├── web/            # Frontend (Next.js)
+├── docker-compose.yml
+├── Taskfile.yml
+└── .env.example
 ```
 
 ---
