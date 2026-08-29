@@ -1,0 +1,28 @@
+name: Branch Naming Convention
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-branch-name:
+    name: Check Branch Name Pattern
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Branch Naming Convention
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          
+          # Regex for allowed branch prefixes
+          PATTERN="^(feature|bugfix|hotfix|docs|chore)\/.+"
+          
+          if [[ ! $BRANCH_NAME =~ $PATTERN ]]; then
+            echo "::error::Nome de branch inválido: '$BRANCH_NAME'"
+            echo "❌ A branch deve seguir a nomenclatura oficial do projeto."
+            echo "Prefixos permitidos: feature/, bugfix/, hotfix/, docs/ ou chore/"
+            echo "Exemplo: feature/nova-tela"
+            exit 1
+          fi
+          
+          echo "✅ O nome da branch '$BRANCH_NAME' é válido."
