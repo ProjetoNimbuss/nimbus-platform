@@ -121,6 +121,8 @@ export const CHART_COLORS = {
 export const NAV_STANDARD = [
   { href: "/", label: "Dashboard", icon: "home" },
   { href: "/previsao", label: "Previsão", icon: "cloud-rain" },
+  { href: "/watch", label: "Watch", icon: "map" },
+  { href: "/vigil", label: "Vigil", icon: "bar-chart-2" },
 ];
 
 export const NAV_TECHNICAL = [

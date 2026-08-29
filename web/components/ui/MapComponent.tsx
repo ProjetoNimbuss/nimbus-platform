@@ -67,11 +67,21 @@ export default function MapComponent({ selectedSlug }: { selectedSlug?: string |
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          // Filtra para garantir que recebemos estações válidas e não um array com objeto de erro
           setStations(data.filter(s => s.id !== undefined));
         }
       })
-      .catch((err) => console.error("Error fetching stations:", err));
+      .catch((err) => {
+        console.warn("Backend API not available, falling back to mock data.", err);
+        // Fallback to mock data for prototype
+        const mockStations = mockMunicipalities.map(m => ({
+          id: m.slug,
+          nome: m.nome,
+          cidade: m.nome,
+          latitude: m.latitude,
+          longitude: m.longitude
+        }));
+        setStations(mockStations);
+      });
   }, []);
 
   const handleMarkerClick = (station: Station) => {
@@ -82,7 +92,6 @@ export default function MapComponent({ selectedSlug }: { selectedSlug?: string |
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          // Converte datas para um formato mais amigável para o chart
           const formattedData = data.map((d: any) => ({
             ...d,
             hora: new Date(d.data_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -90,7 +99,20 @@ export default function MapComponent({ selectedSlug }: { selectedSlug?: string |
           setPrecipData(formattedData);
         }
       })
-      .catch((err) => console.error("Error fetching precipitation:", err))
+      .catch((err) => {
+        console.warn("Backend API not available, falling back to mock precipitation data.", err);
+        // Mock fallback
+        const mockData = Array.from({ length: 6 }).map((_, i) => {
+          const d = new Date();
+          d.setHours(d.getHours() - (5 - i));
+          return {
+            data_hora: d.toISOString(),
+            chuva: Math.floor(Math.random() * 20),
+            hora: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        });
+        setPrecipData(mockData);
+      })
       .finally(() => setLoadingPrecip(false));
   };
 

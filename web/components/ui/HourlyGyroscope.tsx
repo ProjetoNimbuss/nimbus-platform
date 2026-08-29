@@ -18,6 +18,22 @@ export default function HourlyGyroscope({ hours }: HourlyGyroscopeProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Prevent default vertical scrolling and apply it to horizontal scroll
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
   const handleSelect = (idx: number) => {
     setSelectedIndex(idx);
     if (scrollRef.current) {
@@ -28,6 +44,29 @@ export default function HourlyGyroscope({ hours }: HourlyGyroscopeProps) {
         const scrollLeft = el.offsetLeft - parentRect.width / 2 + elRect.width / 2;
         scrollRef.current.scrollTo({ left: scrollLeft, behavior: "smooth" });
       }
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const center = container.scrollLeft + container.clientWidth / 2;
+    
+    let closestIdx = selectedIndex;
+    let minDistance = Infinity;
+    
+    // children[0] is the <style> tag, so we start from 1
+    for (let i = 1; i < container.children.length; i++) {
+      const child = container.children[i] as HTMLElement;
+      const childCenter = child.offsetLeft - container.offsetLeft + child.clientWidth / 2;
+      const distance = Math.abs(childCenter - center);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIdx = i - 1;
+      }
+    }
+    
+    if (closestIdx !== selectedIndex) {
+      setSelectedIndex(closestIdx);
     }
   };
 
@@ -115,6 +154,7 @@ export default function HourlyGyroscope({ hours }: HourlyGyroscopeProps) {
         <div className="flex-1 w-full max-w-full overflow-hidden relative border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-6">
           <div 
             ref={scrollRef}
+            onScroll={handleScroll}
             className="flex overflow-x-auto gap-2 pb-4 pt-8 px-[50%] snap-x snap-mandatory items-end h-full scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
