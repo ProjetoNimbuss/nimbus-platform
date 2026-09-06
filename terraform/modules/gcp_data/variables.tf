@@ -28,3 +28,9 @@ variable "bucket_names" {
     "img-reports-app"
   ]
 }
+
+variable "bigquery_layers" {
+  type        = list(string)
+  description = "Lista de datasets/camadas do BigQuery a serem criados"
+  default     = ["bronze", "silver", "gold"]
+}
