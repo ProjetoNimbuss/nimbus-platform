@@ -98,4 +98,10 @@ transform/logs/
 # Testes & Cobertura
 .pytest_cache/
 .coverage
-htmlcov/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example

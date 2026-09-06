@@ -1,11 +1,11 @@
 variable "gcp_project_id" {
     type = string
-    descripition = "ID do projeto"
+    description = "ID do projeto"
 }
 
 variable "gcp_region" {
     type = string
-    default = "southamerica-east1-a"
+    default = "southamerica-east1"
 }
 
 variable "gcp_zone" {
@@ -13,7 +13,7 @@ variable "gcp_zone" {
     default = "southamerica-east1-a"
 }
 
-variable "api_key" {
+variable "mgc_api_key" {
     type = string
     sensitive   = true
     description = "Magalu Cloud API Key"
@@ -24,3 +24,6 @@ variable "mgc_region" {
     default = "br-ne1"
 }
 
+variable "cloudflare_api_token" {
+    type = string
+}
