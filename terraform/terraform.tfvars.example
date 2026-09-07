@@ -1,0 +1,16 @@
+# Ambiente
+environment = "prod"
+
+# Google Cloud
+gcp_project_id = "seu-projeto-gcp-id"
+gcp_region     = "southamerica-east1"
+
+#Magalu Cloud
+mgc_api_key    = "sua-chave-api-magalu"
+mgc_region     = "br-ne1"
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... seu-email@exemplo.com"
+
+# Cloudflare
+cloudflare_api_token = "seu-token-api-cloudflare"
+domain_name          = "meudominio.com.br"
+subdomains           = ["api", "app"]
