@@ -26,7 +26,7 @@ services:
     ports:
       - "8080:3000"  # Mapeia a porta 8080 (localhost:8080) para a 3000 do Next.js
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000 # O Frontend rodando no navegador vai acessar o localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000 # Frontend rodando no navegador vai acessar o localhost:8000
     depends_on:
       - api
 
@@ -58,7 +58,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
   prefect-server:
     image: prefecthq/prefect:3-python3.11
