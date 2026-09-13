@@ -1,0 +1,48 @@
+**/.git
+**/.github
+**/.vscode
+**/.idea
+
+# Ambientes Virtuais
+**/venv
+**/.venv
+**/env
+
+# Cache e artefatos do Node/Python
+**/node_modules
+**/__pycache__
+**/*.py[cod]
+**/*.pyo
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+**/dist
+
+# Build Web
+**/.next
+**/out
+**/build
+**/.cache
+**/.turbo
+
+# Variáveis de ambiente
+**/.env
+**/.env.local
+**/.env.production
+
+# Banco e dados locais
+**/data
+**/*.duckdb
+**/*.duckdb.wal
+**/*.sqlite
+**/*.db
+**/*.parquet
+**/*.csv
+**/*.tmp
+
+# Logs e Testes
+**/*.log
+**/logs
+**/.pytest_cache
+**/.coverage
+**/htmlcov
