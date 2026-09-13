@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Filter, Calendar, MapPin } from "lucide-react";
 import VigilCharts from "@/components/charts/VigilCharts";
 import KPICard from "@/components/ui/KPICard";
@@ -20,32 +20,32 @@ const generateMockData = (municipio: string, days: number) => {
     
     // Randomize some values for demonstration
     const precip = Math.floor(Math.random() * 60) + (i % 3 === 0 ? basePrecip + 20 : 0);
-    let risco: "normal" | "atencao" | "alerta" | "emergencia" = "normal";
-    
-    if (precip > 60) risco = "emergencia";
-    else if (precip > 40) risco = "alerta";
-    else if (precip > 20) risco = "atencao";
-    
     data.push({
       date: `${d.getDate()}/${d.getMonth() + 1}`,
       precipitacao: precip,
-      nivelRisco: risco,
-      nivelRio: 2 + Math.random() * 2 + (precip / 40)
     });
   }
   return data;
 };
 
 export default function VigilPage() {
+  const [mounted, setMounted] = useState(false);
   const [selectedMun, setSelectedMun] = useState("recife");
   const [period, setPeriod] = useState(7); // days
   
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const chartData = generateMockData(selectedMun, period);
   
   // Calculate some basic mock stats from the generated data
   const totalPrecip = chartData.reduce((acc, curr) => acc + curr.precipitacao, 0);
   const avgPrecip = totalPrecip / period;
-  const maxNivelRio = Math.max(...chartData.map(d => d.nivelRio));
+
+  if (!mounted) {
+    return <div className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">Carregando dados...</div>;
+  }
 
   return (
     <div className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full animate-fade-in">
@@ -96,7 +96,7 @@ export default function VigilPage() {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <KPICard
           label="Total Acumulado (Período)"
           value={totalPrecip.toFixed(1)}
@@ -110,13 +110,6 @@ export default function VigilPage() {
           unit="mm/dia"
           deltaType="positive"
           delta="↑ 15% comparado ao mês anterior"
-        />
-        <KPICard
-          label="Nível Máx. do Rio (Período)"
-          value={maxNivelRio.toFixed(2)}
-          unit="m"
-          deltaType="negative"
-          delta="Próximo da cota de alerta (5m)"
         />
       </div>
 

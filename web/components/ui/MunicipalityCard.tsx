@@ -21,7 +21,7 @@ const itemVariants = {
 
 const MOCK_REPORTS = [
   { id: 1, user: "Morador Local", time: "10 min atrás", text: "Rua alagada no centro, impossível passar de carro.", type: "photo" as const },
-  { id: 2, user: "Defesa Civil Vol.", time: "25 min atrás", text: "Chuva forte continua. Rio subiu 15cm na última hora.", type: "video" as const },
+  { id: 2, user: "Defesa Civil Vol.", time: "25 min atrás", text: "Chuva forte continua. Ventos de até 50km/h registrados.", type: "video" as const },
 ];
 
 export default function MunicipalityCard({ 
