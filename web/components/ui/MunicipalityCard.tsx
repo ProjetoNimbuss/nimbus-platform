@@ -6,24 +6,20 @@ import AlertBadge from "./AlertBadge";
 import { formatMM } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Camera, Video, MessageSquare } from "lucide-react";
-
 interface MunicipalityCardProps {
   municipality: Municipality;
   index: number;
   isExpanded?: boolean;
   onToggle?: () => void;
 }
-
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0 }
 };
-
 const MOCK_REPORTS = [
   { id: 1, user: "Morador Local", time: "10 min atrás", text: "Rua alagada no centro, impossível passar de carro.", type: "photo" as const },
   { id: 2, user: "Defesa Civil Vol.", time: "25 min atrás", text: "Chuva forte continua. Ventos de até 50km/h registrados.", type: "video" as const },
 ];
-
 export default function MunicipalityCard({ 
   municipality: m, 
   index, 
@@ -32,7 +28,6 @@ export default function MunicipalityCard({
 }: MunicipalityCardProps) {
   const config = ALERT_CONFIG[m.nivel_alerta];
   const isEmergency = m.nivel_alerta === "emergencia";
-
   const trendIcon = {
     subindo: "↑",
     estavel: "→",
@@ -48,7 +43,6 @@ export default function MunicipalityCard({
     estavel: "#94A3B8",
     descendo: "#22C55E",
   };
-
   return (
     <motion.div
       variants={itemVariants}
@@ -82,7 +76,6 @@ export default function MunicipalityCard({
             ...(isEmergency ? { "--tw-ring-color": config.border } as React.CSSProperties : {}),
           }}
         >
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="font-semibold text-[var(--color-text-primary)] text-[15px] leading-tight">
@@ -94,8 +87,6 @@ export default function MunicipalityCard({
           </div>
           <AlertBadge level={m.nivel_alerta} size="sm" pulse={isEmergency} />
         </div>
-
-        {/* Precipitation */}
         <div className="space-y-3">
           <div>
             <div className="flex items-baseline justify-between">
@@ -133,8 +124,6 @@ export default function MunicipalityCard({
               {formatMM(m.precipitacao_24h)}
             </motion.p>
           </div>
-
-          {/* Mini progress bar */}
           <div className="progress-bar">
             <div
               className="progress-bar-fill"
@@ -144,8 +133,6 @@ export default function MunicipalityCard({
               }}
             />
           </div>
-
-          {/* Last hour */}
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-[var(--color-text-muted)]">Última hora</span>
             <motion.span 
@@ -158,7 +145,6 @@ export default function MunicipalityCard({
             </motion.span>
           </div>
         </div>
-          {/* Expanded Content */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div 
@@ -186,14 +172,11 @@ export default function MunicipalityCard({
                      'Níveis pluviométricos dentro da normalidade para a região.'}
                   </p>
                 </div>
-
-                {/* Community Reports Mock */}
                 <div className="mt-6 border-t border-[var(--color-border)] pt-4" id={`content-${m.slug}`}>
                   <div className="flex items-center gap-2 mb-4">
                     <MessageSquare size={16} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
                     <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Relatos da Comunidade</h4>
                   </div>
-                  
                   <div className="space-y-3">
                     {MOCK_REPORTS.map((report) => (
                       <div key={report.id} className="bg-[var(--color-bg-surface-alt)] p-3 rounded-xl border border-[var(--color-border)]">

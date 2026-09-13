@@ -1,24 +1,16 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Filter, Calendar, MapPin } from "lucide-react";
 import VigilCharts from "@/components/charts/VigilCharts";
 import KPICard from "@/components/ui/KPICard";
 import { mockMunicipalities } from "@/lib/mock-data";
-
-// Generate some mock data for the charts
 const generateMockData = (municipio: string, days: number) => {
   const data = [];
   const today = new Date();
-  
-  // Seed random values slightly based on municipality string length so it looks different
   const basePrecip = (municipio.length * 3) % 15;
-  
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    
-    // Randomize some values for demonstration
     const precip = Math.floor(Math.random() * 60) + (i % 3 === 0 ? basePrecip + 20 : 0);
     data.push({
       date: `${d.getDate()}/${d.getMonth() + 1}`,
@@ -27,26 +19,19 @@ const generateMockData = (municipio: string, days: number) => {
   }
   return data;
 };
-
 export default function VigilPage() {
   const [mounted, setMounted] = useState(false);
   const [selectedMun, setSelectedMun] = useState("recife");
-  const [period, setPeriod] = useState(7); // days
-  
+  const [period, setPeriod] = useState(7); 
   useEffect(() => {
     setMounted(true);
   }, []);
-
   const chartData = generateMockData(selectedMun, period);
-  
-  // Calculate some basic mock stats from the generated data
   const totalPrecip = chartData.reduce((acc, curr) => acc + curr.precipitacao, 0);
   const avgPrecip = totalPrecip / period;
-
   if (!mounted) {
     return <div className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">Carregando dados...</div>;
   }
-
   return (
     <div className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -58,8 +43,6 @@ export default function VigilPage() {
             Análise histórica e séries temporais
           </p>
         </div>
-        
-        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="glass-card flex items-center px-3 py-2 gap-2 text-sm">
             <MapPin size={16} className="text-[var(--color-text-muted)]" />
@@ -75,7 +58,6 @@ export default function VigilPage() {
               ))}
             </select>
           </div>
-
           <div className="glass-card flex items-center px-3 py-2 gap-2 text-sm">
             <Calendar size={16} className="text-[var(--color-text-muted)]" />
             <select 
@@ -88,14 +70,11 @@ export default function VigilPage() {
               <option value={30} className="bg-[var(--color-bg-primary)]">Últimos 30 dias</option>
             </select>
           </div>
-          
           <button className="glass-card p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
             <Filter size={18} />
           </button>
         </div>
       </div>
-
-      {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <KPICard
           label="Total Acumulado (Período)"
@@ -112,8 +91,6 @@ export default function VigilPage() {
           delta="↑ 15% comparado ao mês anterior"
         />
       </div>
-
-      {/* Main Charts area */}
       <VigilCharts data={chartData} />
     </div>
   );

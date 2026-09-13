@@ -1,5 +1,4 @@
 "use client";
-
 import {
   ResponsiveContainer,
   BarChart,
@@ -9,20 +8,16 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-
 interface ChartDataPoint {
   date: string;
   precipitacao: number;
 }
-
 interface VigilChartsProps {
   data: ChartDataPoint[];
 }
-
 export default function VigilCharts({ data }: VigilChartsProps) {
   return (
     <div className="space-y-6">
-      {/* Precipitação (Bar Chart) */}
       <div className="glass-card p-6">
         <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
           Precipitação (Últimos 7 dias)
@@ -63,7 +58,6 @@ export default function VigilCharts({ data }: VigilChartsProps) {
           </ResponsiveContainer>
         </div>
       </div>
-
     </div>
   );
 }

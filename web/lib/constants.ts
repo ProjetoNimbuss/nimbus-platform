@@ -1,10 +1,4 @@
-// ============================================================
-// RMR Alertas — Constants
-// ============================================================
-
 import type { AlertLevel, Severidade, StatusSazonal } from "./types";
-
-// ---- Alert Colors ----
 export const ALERT_CONFIG: Record<AlertLevel, {
   label: string;
   emoji: string;
@@ -51,16 +45,12 @@ export const ALERT_CONFIG: Record<AlertLevel, {
     icon: "🚨",
   },
 };
-
-// ---- Alert Priority (for sorting) ----
 export const ALERT_PRIORITY: Record<AlertLevel, number> = {
   emergencia: 4,
   alerta: 3,
   atencao: 2,
   normal: 1,
 };
-
-// ---- Severity Colors ----
 export const SEVERITY_CONFIG: Record<Severidade, {
   color: string;
   bg: string;
@@ -72,8 +62,6 @@ export const SEVERITY_CONFIG: Record<Severidade, {
   "Severo (top 25%)": { color: "#3B82F6", bg: "rgba(59,130,246,0.12)", label: "Severo" },
   "Significativo": { color: "#6B7280", bg: "rgba(107,114,128,0.12)", label: "Significativo" },
 };
-
-// ---- Seasonal Status Colors ----
 export const SEASONAL_CONFIG: Record<StatusSazonal, {
   color: string;
   bg: string;
@@ -85,29 +73,20 @@ export const SEASONAL_CONFIG: Record<StatusSazonal, {
   "Abaixo da média": { color: "#3B82F6", bg: "rgba(59,130,246,0.12)" },
   "Dentro da normalidade": { color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
 };
-
-// ---- Month Names (PT-BR) ----
 export const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
-
 export const MONTH_ABBR = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
   "Jul", "Ago", "Set", "Out", "Nov", "Dez",
 ];
-
-// ---- Day Names (PT-BR) ----
 export const DAY_NAMES = [
   "Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado",
 ];
 export const DAY_ABBR = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-// ---- RMR Center coordinates ----
 export const RMR_CENTER = { lat: -8.0476, lng: -34.877 };
 export const RMR_ZOOM = 11;
-
-// ---- Recharts Colors ----
 export const CHART_COLORS = {
   primary: "#3B82F6",
   secondary: "#8B5CF6",
@@ -116,18 +95,13 @@ export const CHART_COLORS = {
   grid: "rgba(148, 163, 184, 0.1)",
   tooltip_bg: "rgba(15, 23, 42, 0.95)",
 };
-
-// ---- Navigation ----
 export const NAV_STANDARD = [
   { href: "/", label: "Dashboard", icon: "home" },
   { href: "/previsao", label: "Previsão", icon: "cloud-rain" },
   { href: "/watch", label: "Watch", icon: "map" },
   { href: "/vigil", label: "Vigil", icon: "bar-chart-2" },
 ];
-
 export const NAV_TECHNICAL = [
   { href: "/tecnico", label: "Dashboard", icon: "bar-chart" },
   { href: "/tecnico/historico", label: "Histórico", icon: "trending-up" },
-  // { href: "/tecnico/extremos", label: "Extremos", icon: "zap" },
-  // { href: "/tecnico/sazonal", label: "Sazonal", icon: "calendar" },
 ];
