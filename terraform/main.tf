@@ -6,14 +6,15 @@ module "gcp_data" {
 }
 
 module "mgc_compute" {
-  source         = "./modules/mgc_compute"
-  environment    = var.environment
-  ssh_public_key = var.ssh_public_key
+  source             = "./modules/mgc_compute"
+  environment        = var.environment
+  ssh_public_key     = var.ssh_public_key
+  tailscale_auth_key = var.tailscale_auth_key
 }
 
-module "cloudflare_dns" {
-  source           = "./modules/cloudflare_dns"
-  domain_name      = var.domain_name
-  server_public_ip = module.mgc_compute.public_ip 
-  subdomains       = var.subdomains
-}
+# module "cloudflare_dns" {
+#   source           = "./modules/cloudflare_dns"
+#   domain_name      = var.domain_name
+#   server_public_ip = module.mgc_compute.public_ip 
+#   subdomains       = var.subdomains
+# }

@@ -11,12 +11,12 @@ output "mgc_instance_name" {
   description = "Nome da VM criada na Magalu Cloud"
   value       = module.mgc_compute.instance_name
 }
-output "mgc_instance_public_ip" {
-  description = "Endereço IP público da VM na Magalu Cloud"
-  value       = module.mgc_compute.public_ip
+output "mgc_instance_private_ip" {
+  description = "Endereço IP privado da VM na Magalu Cloud"
+  value       = module.mgc_compute.private_ip
 }
 
-output "cloudflare_configured_hostnames" {
-  description = "Hostnames protegidos e roteados pelo Cloudflare"
-  value       = module.cloudflare_dns.subdomain_hostnames
-}
+# output "cloudflare_configured_hostnames" {
+#   description = "Hostnames protegidos e roteados pelo Cloudflare"
+#   value       = module.cloudflare_dns.subdomain_hostnames
+# }

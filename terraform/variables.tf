@@ -33,6 +33,11 @@ variable "ssh_public_key" {
   type        = string
   description = "Chave pública SSH"
 }
+variable "tailscale_auth_key" {
+  type        = string
+  sensitive   = true
+  description = "Auth key do Tailscale para conexao automatica do servidor"
+}
 
 variable "cloudflare_api_token" {
   type        = string
