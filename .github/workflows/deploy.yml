@@ -1,0 +1,29 @@
+name: Deploy para Produção
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Puxar o código do GitHub para a VM
+        uses: actions/checkout@v4
+
+      - name: Confirmar e rodar comandos na VM
+        run: |
+          echo "🚀 Deploy disparado com sucesso! O código já está na VM."
+          
+          # Aqui é onde a magia acontece. Quando o projeto estiver estruturado, 
+          # você pode descomentar/adicionar os comandos de inicialização:
+          #
+          # Exemplo para Node:
+          # npm install
+          # npm start
+          #
+          # Exemplo para Docker:
+          # docker-compose up -d --build
