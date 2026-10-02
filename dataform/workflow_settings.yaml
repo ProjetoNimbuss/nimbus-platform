@@ -1,0 +1,5 @@
+defaultProject: nimbus-platform
+defaultLocation: southamerica-east1
+defaultDataset: nimbus_bronze
+defaultAssertionDataset: nimbus_assertions
+dataformCoreVersion: 3.0.0
