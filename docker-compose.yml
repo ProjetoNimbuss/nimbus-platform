@@ -71,7 +71,7 @@ services:
   prefect-worker:
     build:
       context: .
-      dockerfile: flows/Dockerfile.prefect
+      dockerfile: pipelines/flows/Dockerfile.prefect
     container_name: nimbus_prefect_worker
     command: prefect worker start --pool default-agent-pool
     environment:

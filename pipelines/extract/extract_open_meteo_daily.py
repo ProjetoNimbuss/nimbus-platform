@@ -5,8 +5,12 @@ import pandas as pd
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-from pipeline.storage.duckdb_minio import get_duckdb_conn
+try:
+    from pipelines.config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+    from pipelines.storage.duckdb_minio import get_duckdb_conn
+except ImportError:
+    from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+    from storage.duckdb_minio import get_duckdb_conn
 
 CITIES = {
     "Recife": (-8.0539, -34.8811),

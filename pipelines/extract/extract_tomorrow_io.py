@@ -13,7 +13,10 @@ from config.settings import (
     TOMORROW_IO_API_KEY,
     BUCKETS,
 )
-from pipeline.storage.duckdb_minio import get_duckdb_conn
+try:
+    from pipelines.storage.duckdb_minio import get_duckdb_conn
+except ImportError:
+    from storage.duckdb_minio import get_duckdb_conn
 
 POLOS_SENTINELA = {
     "Polo Central": ("Recife", -8.0539, -34.8811),
