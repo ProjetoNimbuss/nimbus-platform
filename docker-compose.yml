@@ -2,17 +2,19 @@ version: '3.8'
 
 services:
   api:
-    image: python:3.11-slim # essa imagem ta python, tem que mudar para php
+    build:
+      context: ./api
+      target: development
     container_name: nimbus_api
     volumes:
-      - .:/app
-    working_dir: /app/api
+      - ./api:/var/www/html
+    working_dir: /var/www/html
     command: >
-      bash -c "apt-get update && apt-get install -y gcc && pip install --no-cache-dir -r ../requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "composer install && php artisan serve --host=0.0.0.0 --port=8000"
     ports:
       - "8000:8000"
     environment:
-      - PYTHONUNBUFFERED=1
+      - APP_ENV=local
 
   web:
     image: node:20-alpine
