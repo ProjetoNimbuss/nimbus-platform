@@ -8,13 +8,33 @@ tasks:
     cmds:
       - task --list
 
-  # Docker
-  up:
-    desc: Subir TODOS os serviços do projeto (Docker Compose)
+  # ==========================================
+  # 🚀 AMBIENTES (DEV e PROD)
+  # ==========================================
+  dev:
+    desc: Inicia o ambiente de DESENVOLVIMENTO (API com hot-reload)
     cmds:
       - docker-compose up -d
-      - task: status
 
+  prod:
+    desc: Constrói a imagem Docker de PRODUÇÃO otimizada e a executa para testes locais
+    cmds:
+      - task: prod:build
+      - task: prod:run
+
+  prod:build:
+    desc: Constrói apenas a imagem Docker da API para PRODUÇÃO
+    cmds:
+      - docker build --target production -t nimbus-api-prod ./api
+
+  prod:run:
+    desc: Executa apenas a imagem de PRODUÇÃO localmente (Simulação)
+    cmds:
+      - docker run --rm -d -p 9000:9000 --name api-prod nimbus-api-prod
+
+  # ==========================================
+  # 🐳 DOCKER (Comandos Gerais)
+  # ==========================================
   down:
     desc: Parar TODOS os serviços do Docker
     cmds:
@@ -23,7 +43,7 @@ tasks:
   restart:
     desc: Reiniciar todos os containers
     cmds:
-      - docker compose restart
+      - docker-compose restart
 
   status:
     desc: Ver o status dos containers em execução
@@ -66,7 +86,7 @@ tasks:
   setup:
     desc: Setup inicial completo do projeto (Subir infra + Buckets MinIO + Migrations)
     cmds:
-      - task: up
+      - task: dev
       - task: setup-storage
       - task: migrate
 
