@@ -73,7 +73,7 @@ tasks:
   setup-storage:
     desc: Provisionar os buckets S3 no MinIO local
     cmds:
-      - python pipeline/storage/setup_minio.py
+      - python pipelines/storage/setup_minio.py
 
   # BACKEND 
   migrate:

@@ -5,8 +5,12 @@ import pandas as pd
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-from pipeline.storage.duckdb_minio import get_duckdb_conn
+try:
+    from pipelines.config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+    from pipelines.storage.duckdb_minio import get_duckdb_conn
+except ImportError:
+    from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
+    from storage.duckdb_minio import get_duckdb_conn
 
 COASTAL_POINTS = {
     "Recife - Boa Viagem": (-8.1200, -34.8800),
@@ -27,7 +31,7 @@ STORAGE_OPTIONS = {
 }
 
 
-def fetch_marine_hourly() -> pd.DataFrame:
+def fetch_marine_daily() -> pd.DataFrame:
     pontos = list(COASTAL_POINTS.keys())
     lats_tuple, lons_tuple = zip(*COASTAL_POINTS.values())
 
@@ -37,21 +41,19 @@ def fetch_marine_hourly() -> pd.DataFrame:
     params = {
         "latitude": lats,
         "longitude": lons,
-        "hourly": [
-            "wave_height",
-            "wave_period",
-            "wave_direction",
-            "swell_wave_height",
-            "swell_wave_period",
-            "swell_wave_direction",
-            "ocean_current_velocity",
-            "ocean_current_direction",
+        "daily": [
+            "wave_height_max",
+            "wave_direction_dominant",
+            "wave_period_max",
+            "swell_wave_height_max",
+            "swell_wave_direction_dominant",
+            "swell_wave_period_max",
         ],
         "forecast_days": 5,
         "timezone": "America/Recife",
     }
 
-    print("[MARINE-HOURLY] Requisitando previsão horária de ondas...")
+    print("[MARINE-DAILY] Requisitando resumos diários de ondas...")
     response = requests.get(
         "https://marine-api.open-meteo.com/v1/marine", params=params, timeout=30
     )
@@ -63,7 +65,7 @@ def fetch_marine_hourly() -> pd.DataFrame:
 
     lista_dfs = []
     for ponto, item in zip(pontos, dados):
-        df_ponto = pd.DataFrame(item.get("hourly", {}))
+        df_ponto = pd.DataFrame(item.get("daily", {}))
         df_ponto["ponto"] = ponto
         df_ponto["latitude"] = item.get("latitude")
         df_ponto["longitude"] = item.get("longitude")
@@ -76,7 +78,7 @@ def fetch_marine_hourly() -> pd.DataFrame:
 
 def save_to_minio(df_total: pd.DataFrame) -> str:
     if df_total.empty:
-        print("[MARINE-HOURLY] DataFrame vazio. Nenhum arquivo salvo.")
+        print("[MARINE-DAILY] DataFrame vazio. Nenhum arquivo salvo.")
         return ""
 
     bucket = BUCKETS.get("meteo_marine", "open-meteo-marine")
@@ -85,7 +87,7 @@ def save_to_minio(df_total: pd.DataFrame) -> str:
 
     df_total["uf"] = "PE"
     for (uf, dt_ext), group in df_total.groupby(["uf", "data_extracao"]):
-        s3_file_path = f"s3://{bucket}/forecast_hourly/uf={uf}/data_extracao={dt_ext}/marine_hourly_{time_str}.parquet"
+        s3_file_path = f"s3://{bucket}/forecast_daily/uf={uf}/data_extracao={dt_ext}/marine_daily_{time_str}.parquet"
         group_to_save = group.drop(columns=["uf", "data_extracao"])
         group_to_save.to_parquet(
             s3_file_path,
@@ -95,28 +97,28 @@ def save_to_minio(df_total: pd.DataFrame) -> str:
             storage_options=STORAGE_OPTIONS,
         )
 
-    print(f"[MARINE-HOURLY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_hourly/")
-    return f"s3://{bucket}/forecast_hourly/"
+    print(f"[MARINE-DAILY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_daily/")
+    return f"s3://{bucket}/forecast_daily/"
 
 
 def update_bronze_view():
     conn = get_duckdb_conn()
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
     bucket = BUCKETS.get("meteo_marine", "open-meteo-marine")
-    s3_pattern = f"s3://{bucket}/forecast_hourly/**/*.parquet"
+    s3_pattern = f"s3://{bucket}/forecast_daily/**/*.parquet"
 
     conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.open_meteo_marine_forecast_hourly AS
+        CREATE OR REPLACE VIEW bronze.open_meteo_marine_forecast_daily AS
         SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
     """)
     conn.close()
     print(
-        f"[MARINE-HOURLY] VIEW bronze.open_meteo_marine_forecast_hourly atualizada/verificada apontando para {s3_pattern}."
+        f"[MARINE-DAILY] VIEW bronze.open_meteo_marine_forecast_daily atualizada/verificada apontando para {s3_pattern}."
     )
 
 
 def main():
-    df = fetch_marine_hourly()
+    df = fetch_marine_daily()
     save_to_minio(df)
     update_bronze_view()
 

@@ -3,7 +3,10 @@ import sys
 import duckdb
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, DB_PATH
+try:
+    from pipelines.config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, DB_PATH
+except ImportError:
+    from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, DB_PATH
 
 
 def get_duckdb_conn(db_path: str = str(DB_PATH)) -> duckdb.DuckDBPyConnection:

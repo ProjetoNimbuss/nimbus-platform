@@ -241,7 +241,10 @@ class ScraperAPAC:
 
 def update_bronze_view():
     """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet de APAC no MinIO"""
-    from pipeline.storage.duckdb_minio import get_duckdb_conn
+    try:
+        from pipelines.storage.duckdb_minio import get_duckdb_conn
+    except ImportError:
+        from storage.duckdb_minio import get_duckdb_conn
 
     conn = get_duckdb_conn()
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
