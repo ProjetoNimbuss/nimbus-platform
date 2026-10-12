@@ -5,8 +5,9 @@ import requests
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import URL_API_IBGE, BUCKETS
+from config.settings import URL_API_IBGE
 from storage.gcs import save_dataframe_to_gcs
+
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 HEADERS = {"User-Agent": "PEPluvi/1.0"}

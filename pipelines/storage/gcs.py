@@ -1,7 +1,7 @@
-import os
 from datetime import datetime
 import pandas as pd
 from config.settings import BUCKETS, GCP_PROJECT_ID
+
 
 
 def get_bucket_name(bucket_key: str) -> str:

@@ -6,8 +6,8 @@ import os
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import BUCKETS
 from storage.gcs import save_dataframe_to_gcs
+
 
 
 URL = "http://dados.apac.pe.gov.br:41120/cemaden/"

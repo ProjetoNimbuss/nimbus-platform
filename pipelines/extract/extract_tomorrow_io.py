@@ -10,7 +10,7 @@ from config.settings import (
     TOMORROW_IO_API_KEY,
     BUCKETS,
 )
-from storage.gcs import save_dataframe_to_gcs
+
 
 POLOS_SENTINELA = {
     "Polo Central": ("Recife", -8.0539, -34.8811),
