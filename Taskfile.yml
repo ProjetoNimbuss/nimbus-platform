@@ -8,97 +8,191 @@ tasks:
     cmds:
       - task --list
 
-  #  AMBIENTES (DEV e PROD)
-  dev:
-    desc: Inicia o ambiente de DESENVOLVIMENTO (API com hot-reload)
+  # CICLO DE VIDA GLOBAL
+  up:
+    desc: Inicia todos os serviços do ecossistema Nimbus em background
     cmds:
       - docker-compose up -d
 
-  prod:
-    desc: Constrói a imagem Docker de PRODUÇÃO otimizada e a executa para testes locais
+  dev:
+    desc: Alias para task up (Inicia todos os serviços)
     cmds:
-      - task: prod:build
-      - task: prod:run
+      - task: up
 
-  prod:build:
-    desc: Constrói apenas a imagem Docker da API para PRODUÇÃO
-    cmds:
-      - docker build --target production -t nimbus-api-prod ./api
-
-  prod:run:
-    desc: Executa apenas a imagem de PRODUÇÃO localmente (Simulação)
-    cmds:
-      - docker run --rm -d -p 9000:9000 --name api-prod nimbus-api-prod
-
-  # DOCKER (Comandos Gerais)
   down:
-    desc: Parar TODOS os serviços do Docker
+    desc: Para todos os serviços do Docker
     cmds:
       - docker-compose down
 
+  clean:
+    desc: Para os serviços e remove volumes e contêineres órfãos (Reset limpo)
+    cmds:
+      - docker-compose down -v --remove-orphans
+
   restart:
-    desc: Reiniciar todos os containers
+    desc: Reinicia todos os contêineres
     cmds:
       - docker-compose restart
 
   status:
-    desc: Ver o status dos containers em execução
+    desc: Exibe o status de todos os contêineres em execução
     cmds:
       - docker-compose ps
 
-  logs:
-    desc: Acompanhar os logs de todos os containers em tempo real
+  setup:
+    desc: Setup inicial completo do projeto (Sobe infraestrutura e executa migrations)
     cmds:
-      - docker-compose logs -f
+      - task: up
+      - task: migrate
 
-  # Docker isolado
+  # SUBIDAS MODULARES
+  up:app:
+    desc: Sobe apenas a camada de aplicação (PostgreSQL, Laravel API e Next.js Web)
+    cmds:
+      - docker-compose up -d postgre api web
+
+  up:pipelines:
+    desc: Sobe apenas a camada de dados e orquestração (Prefect Server e Worker)
+    cmds:
+      - docker-compose up -d prefect-server prefect-worker
+
+  up:obs:
+    desc: Sobe a stack completa de observabilidade (Prometheus, Grafana, Node Exporter, cAdvisor)
+    cmds:
+      - docker-compose up -d node-exporter cadvisor prometheus grafana
+
   up:postgres:
-    desc: Subir apenas o Banco de Dados Relacional (PostgreSQL)
+    desc: Sobe apenas o banco de dados relacional (PostgreSQL)
     cmds:
       - docker-compose up -d postgre
 
   up:api:
-    desc: Subir apenas a Backend API (Laravel)
+    desc: Sobe apenas o backend (Laravel API)
     cmds:
       - docker-compose up -d api
 
-  web:up: # alias para subida isolada do frontend
   up:web:
-    desc: Subir apenas o Frontend (Next.js)
+    desc: Sobe apenas o frontend (Next.js)
     cmds:
       - docker-compose up -d web
 
   up:prefect:
-    desc: Subir apenas o Orquestrador Prefect (Server + Worker)
+    desc: Sobe apenas os serviços do Prefect (Server e Worker)
     cmds:
       - docker-compose up -d prefect-server prefect-worker
 
-  #  Setup
-  setup:
-    desc: Setup inicial completo do projeto (Subir infra + Migrations)
+  up:prometheus:
+    desc: Sobe apenas o servidor Prometheus
     cmds:
-      - task: dev
-      - task: migrate
+      - docker-compose up -d prometheus
 
-  # BACKEND 
+  up:grafana:
+    desc: Sobe apenas o servidor Grafana
+    cmds:
+      - docker-compose up -d grafana
+
+  # LOGS EM TEMPO REAL
+  logs:
+    desc: Acompanha os logs de todos os contêineres em tempo real
+    cmds:
+      - docker-compose logs -f
+
+  logs:api:
+    desc: Acompanha os logs da API Laravel
+    cmds:
+      - docker-compose logs -f api
+
+  logs:web:
+    desc: Acompanha os logs do frontend Next.js
+    cmds:
+      - docker-compose logs -f web
+
+  logs:worker:
+    desc: Acompanha os logs do Prefect Worker (execução de pipelines)
+    cmds:
+      - docker-compose logs -f prefect-worker
+
+  logs:prefect:
+    desc: Acompanha os logs do Prefect Server
+    cmds:
+      - docker-compose logs -f prefect-server
+
+  logs:obs:
+    desc: Acompanha os logs da stack de observabilidade
+    cmds:
+      - docker-compose logs -f prometheus grafana cadvisor node-exporter
+
+  # PIPELINES DE DADOS (PREFECT)
+  flow:ingest:
+    desc: Executa o fluxo completo de ingestão para o GCS no contêiner do worker
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/nimbus_ingestion_flow.py
+
+  flow:cemaden:
+    desc: Executa o fluxo de ingestão do CEMADEN no contêiner do worker
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/cemaden_workflow.py
+
+  flow:tomorrow:
+    desc: Executa o fluxo de ingestão Tomorrow.io no contêiner do worker
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/tomorrow_workflow.py
+
+  flow:openmeteo:
+    desc: Executa o fluxo de ingestão Open-Meteo no contêiner do worker
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/open_meteo_workflow.py
+
+  flow:apac:
+    desc: Executa o fluxo de ingestão APAC (Scraping com Chrome headless) no contêiner do worker
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/apac_workflow.py
+
+  # BACKEND & BANCO DE DADOS
   migrate:
-    desc: Rodar as migrations do banco de dados relacional no Laravel
+    desc: Executa as migrations do banco de dados relacional no Laravel
     cmds:
       - docker-compose exec api php artisan migrate --force
 
   seed:
-    desc: Alimentar o banco relacional com dados de teste (Seeders Laravel)
+    desc: Alimenta o banco relacional com dados de teste (Seeders Laravel)
     cmds:
       - docker-compose exec api php artisan db:seed
 
-  # Lint
+  migrate:fresh:
+    desc: Reseta o banco relacional e reexecuta todas as migrations com seeders
+    cmds:
+      - docker-compose exec api php artisan migrate:fresh --seed --force
+
+  # TERMINAIS INTERATIVOS
+  bash:api:
+    desc: Abre terminal interativo no contêiner da API Laravel
+    cmds:
+      - docker-compose exec api sh
+
+  bash:worker:
+    desc: Abre terminal interativo no contêiner do Prefect Worker
+    cmds:
+      - docker-compose exec prefect-worker bash
+
+  bash:db:
+    desc: Abre sessão interativa no PostgreSQL via psql
+    cmds:
+      - docker-compose exec postgre psql -U nimbus_adm -d nimbus_app
+
+  # QUALIDADE E DEPENDÊNCIAS
   lint:
-    desc: Executar o linter Ruff nos scripts Python
+    desc: Executa o linter Ruff nos scripts Python
     cmds:
       - ruff check .
 
+  lint:fix:
+    desc: Executa o linter Ruff e aplica correções automáticas
+    cmds:
+      - ruff check --fix .
+
   install:
-    desc: Instalar dependências Python e pre-commit locais
+    desc: Instala dependências Python e pre-commit locais
     cmds:
       - pip install -r requirements.txt
       - pip install ruff pre-commit
