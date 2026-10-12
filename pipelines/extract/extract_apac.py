@@ -1,8 +1,10 @@
 import time
 import re
+import sys
+import os
 import logging
 from datetime import date
-from pathlib import Path
+from io import StringIO
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -10,26 +12,20 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from io import StringIO
-import sys
-import os
-from config.settings import BASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-import s3fs
+import gcsfs
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from config.settings import BASE_URL, BUCKETS
 
-LOG_FILE = Path(__file__).resolve().parent / "scraper.log"
-
-s3_fs = s3fs.S3FileSystem(
-    key=MINIO_ACCESS_KEY, secret=MINIO_SECRET_KEY, client_kwargs={"endpoint_url": MINIO_ENDPOINT}
-)
+fs = gcsfs.GCSFileSystem()
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8"), logging.StreamHandler()],
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 log = logging.getLogger(__name__)
+
 
 MESORREGIOES = {
     2605: "Metropolitana_Recife",
@@ -240,31 +236,17 @@ class ScraperAPAC:
 
 
 def update_bronze_view():
-    """Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet de APAC no MinIO"""
-    try:
-        from pipelines.storage.duckdb_minio import get_duckdb_conn
-    except ImportError:
-        from storage.duckdb_minio import get_duckdb_conn
-
-    conn = get_duckdb_conn()
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
-
-    bucket = BUCKETS.get("apac", "web-scraping-apac")
-    s3_pattern = f"s3://{bucket}/*.parquet"
-
-    conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.apac_historico AS
-        SELECT * FROM read_parquet('{s3_pattern}')
-    """)
-
-    conn.close()
-    print(f"[APAC] VIEW bronze.apac_historico atualizada/verificada apontando para {s3_pattern}.")
+    """Placeholder compatível para orquestração."""
+    pass
 
 
-def main():
-    ano_inicio = 1961
-    ano_fim = date.today().year
+def run_apac_scraper(ano_inicio: int = 1961, ano_fim: int = None) -> int:
+    """Executa o scraper da APAC para todas as mesorregiões e salva no GCS."""
+    if ano_fim is None:
+        ano_fim = date.today().year
+
     scraper = ScraperAPAC(headless=True)
+    total_salvos = 0
 
     try:
         for cod_id, nome_meso in MESORREGIOES.items():
@@ -277,8 +259,8 @@ def main():
             scraper.selecionar_mesorregiao(cod_id)
 
             for ano in range(ano_inicio, ano_fim + 1):
-                s3_path = f"s3://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
-                if s3_fs.exists(s3_path):
+                gcs_path = f"gs://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
+                if fs.exists(gcs_path):
                     continue
 
                 d_ini = f"01/01/{ano}"
@@ -294,13 +276,9 @@ def main():
                     if not df.empty:
                         df["mesorregiao_id"] = cod_id
                         df["ano_ref"] = ano
-                        storage_options = {
-                            "key": MINIO_ACCESS_KEY,
-                            "secret": MINIO_SECRET_KEY,
-                            "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
-                        }
-                        df.to_parquet(s3_path, index=False, storage_options=storage_options)
-                        log.info(f"  [OK] {ano}: {len(df)} registros salvos.")
+                        df.to_parquet(gcs_path, index=False)
+                        log.info(f"  [OK] {ano}: {len(df)} registros salvos no GCS.")
+                        total_salvos += 1
                     else:
                         log.warning(f"  [!] {ano}: Sem dados válidos para este ano.")
 
@@ -316,11 +294,17 @@ def main():
                         log.error(f"Falha ao recuperar após erro: {e2}")
                     time.sleep(2)
 
-        update_bronze_view()
-
     finally:
         scraper.fechar()
+
+    log.info(f"Scraper APAC finalizado. Total de novos arquivos salvos: {total_salvos}")
+    return total_salvos
+
+
+def main():
+    run_apac_scraper()
 
 
 if __name__ == "__main__":
     main()
+

@@ -7,16 +7,10 @@ from datetime import datetime, timezone
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config.settings import (
-    MINIO_ENDPOINT,
-    MINIO_ACCESS_KEY,
-    MINIO_SECRET_KEY,
     TOMORROW_IO_API_KEY,
     BUCKETS,
 )
-try:
-    from pipelines.storage.duckdb_minio import get_duckdb_conn
-except ImportError:
-    from storage.duckdb_minio import get_duckdb_conn
+
 
 POLOS_SENTINELA = {
     "Polo Central": ("Recife", -8.0539, -34.8811),
@@ -25,13 +19,8 @@ POLOS_SENTINELA = {
     "Polo Oeste": ("São Lourenço da Mata", -8.0019, -35.0181),
 }
 
-STORAGE_OPTIONS = {
-    "key": MINIO_ACCESS_KEY,
-    "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
-}
-
 HORIZONTE_HORAS = 12
+
 
 
 def fetch_tomorrow_forecast() -> pd.DataFrame:
@@ -80,51 +69,39 @@ def fetch_tomorrow_forecast() -> pd.DataFrame:
     return df_landing
 
 
-def save_to_minio(df: pd.DataFrame) -> str:
+def save_to_gcs(df: pd.DataFrame) -> str:
     if df.empty:
         print("[TOMORROW-IO] DataFrame vazio. Nenhum arquivo salvo.")
         return ""
 
-    bucket = BUCKETS.get("tomorrow", "tomorrow-api")
+    bucket = BUCKETS.get("tomorrow")
     now = datetime.now()
     time_str = now.strftime("%H%M%S")
 
     df["uf"] = "PE"
     for (uf, dt_ing), group in df.groupby(["uf", "data_ingestao"]):
-        s3_file_path = f"s3://{bucket}/hourly_forecast/uf={uf}/data_ingestao={dt_ing}/tomorrow_{time_str}.parquet"
+        gcs_file_path = f"gs://{bucket}/hourly_forecast/uf={uf}/data_ingestao={dt_ing}/tomorrow_{time_str}.parquet"
         group_to_save = group.drop(columns=["uf", "data_ingestao"])
         group_to_save.to_parquet(
-            s3_file_path,
+            gcs_file_path,
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS,
         )
 
-    print(f"[TOMORROW-IO] Sucesso! Arquivos nomeados salvos em s3://{bucket}/hourly_forecast/")
-    return f"s3://{bucket}/hourly_forecast/"
+    print(f"[TOMORROW-IO] Sucesso! Arquivos salvos em gs://{bucket}/hourly_forecast/")
+    return f"gs://{bucket}/hourly_forecast/"
 
 
 def update_bronze_view():
-    conn = get_duckdb_conn()
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
-    bucket = BUCKETS.get("tomorrow", "tomorrow-api")
-    s3_pattern = f"s3://{bucket}/hourly_forecast/**/*.parquet"
-
-    conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.tomorrow_io_hourly_forecast AS
-        SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
-    """)
-    conn.close()
-    print(
-        f"[TOMORROW-IO] VIEW bronze.tomorrow_io_hourly_forecast atualizada/verificada apontando para {s3_pattern}."
-    )
+    """Placeholder compatível para orquestração."""
+    pass
 
 
 def main():
     df = fetch_tomorrow_forecast()
-    save_to_minio(df)
-    update_bronze_view()
+    save_to_gcs(df)
+
 
 
 if __name__ == "__main__":

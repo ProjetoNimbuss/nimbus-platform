@@ -6,8 +6,9 @@ import os
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-from storage.duckdb_minio import get_duckdb_conn
+from storage.gcs import save_dataframe_to_gcs
+
+
 
 URL = "http://dados.apac.pe.gov.br:41120/cemaden/"
 
@@ -74,48 +75,18 @@ def fetch_data() -> pd.DataFrame:
 
 
 def save_partitioned(df: pd.DataFrame) -> str:
-    # Salva o DataFrame em formato Parquet particionado pela data do dado no MinIO
+    # Salva o DataFrame em formato Parquet particionado no Google Cloud Storage
     if df.empty:
         print("DataFrame vazio. Nenhum arquivo salvo.")
         return ""
 
-    # Determina a data de partição a partir do registro mais recente obtido
     data_referencia = df["data_hora"].max()
-    if pd.isnull(data_referencia):
-        data_referencia = datetime.now()
-
-    # Identificador de timestamp único no dia para evitar colisões de arquivos
-    now = datetime.now()
-    filename = f"{now.strftime('%H-%M-%S')}.parquet"
-
-    bucket = BUCKETS["cemaden"]
-    s3_path = f"s3://{bucket}/ano={data_referencia.year}/mes={data_referencia.month:02d}/dia={data_referencia.day:02d}/{filename}"
-
-    storage_options = {
-        "key": MINIO_ACCESS_KEY,
-        "secret": MINIO_SECRET_KEY,
-        "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
-    }
-
-    df.to_parquet(s3_path, index=False, storage_options=storage_options)
-    return s3_path
+    return save_dataframe_to_gcs(df, bucket_key="cemaden", ref_date=data_referencia)
 
 
 def update_bronze_view():
-    # Cria ou atualiza a VIEW no DuckDB apontando para todos os arquivos Parquet no MinIO
-    conn = get_duckdb_conn()
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
-
-    bucket = BUCKETS["cemaden"]
-    s3_pattern = f"s3://{bucket}/**/*.parquet"
-
-    conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.data_cemaden AS
-        SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
-    """)
-
-    conn.close()
-    print(f"VIEW bronze.data_cemaden atualizada/verificada apontando para {s3_pattern}.")
+    """Placeholder compatível para orquestração."""
+    pass
 
 
 def executar_pipeline():
@@ -124,11 +95,9 @@ def executar_pipeline():
     print(f"{len(df)} registros obtidos.")
 
     path = save_partitioned(df)
-    print(f"Dados salvos em Raw: {path}")
-
-    print("Atualizando VIEW no DuckDB...")
-    update_bronze_view()
+    print(f"Dados salvos no GCS: {path}")
     print("Pipeline CEMADEN concluído.")
+
 
 
 if __name__ == "__main__":

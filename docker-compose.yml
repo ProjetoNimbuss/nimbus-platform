@@ -32,25 +32,6 @@ services:
     depends_on:
       - api
 
-  minio:
-    image: minio/minio:latest
-    container_name: nimbus_minio
-    ports:
-      - "9000:9000" # S3 API endpoint
-      - "9001:9001" # Console Web
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-
   postgre:
     image: postgres:18-alpine3.23
     environment:
@@ -78,17 +59,19 @@ services:
     command: prefect worker start --pool default-agent-pool
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-sa-key.json
+      - TOMORROW_IO_API_KEY=${TOMORROW_IO_API_KEY}
     depends_on:
       - prefect-server
-      - minio
     volumes:
       - .:/app
     restart: unless-stopped
 
+
 volumes:
   nimbus_node_modules:
   nimbus_next_build:
-  minio_data:
   pgdata:
     driver: local
 
