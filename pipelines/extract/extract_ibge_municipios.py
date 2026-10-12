@@ -1,8 +1,13 @@
+import sys
+import os
 import time
-import duckdb
 import requests
+import pandas as pd
 
-DB_PATH = "include/data/nimbus.duckdb"
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from config.settings import URL_API_IBGE, BUCKETS
+from storage.gcs import save_dataframe_to_gcs
+
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 HEADERS = {"User-Agent": "PEPluvi/1.0"}
 
@@ -26,41 +31,47 @@ def get_coords(municipio: str) -> tuple[float, float] | tuple[None, None]:
     return None, None
 
 
+def fetch_ibge_municipios() -> pd.DataFrame:
+    print("Buscando municípios de Pernambuco na API do IBGE...")
+    resp = requests.get(URL_API_IBGE, timeout=30)
+    resp.raise_for_status()
+    dados = resp.json()
+
+    lista = []
+    for item in dados:
+        lista.append({
+            "codigo_ibge": item["id"],
+            "municipio": item["nome"],
+        })
+    return pd.DataFrame(lista)
+
+
 def main():
-    conn = duckdb.connect(DB_PATH)
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
+    df = fetch_ibge_municipios()
+    lats = []
+    lons = []
 
-    # Carrega lista de municípios da tabela já existente
-    municipios = conn.execute(
-        "SELECT codigo_ibge, municipio FROM bronze.ibge_municipios_pe ORDER BY municipio"
-    ).fetchall()
-
-    # Prepara tabela de destino
-    conn.execute("""
-        CREATE OR REPLACE TABLE bronze.municipios_pe_geo (
-            codigo_ibge INTEGER PRIMARY KEY,
-            municipio VARCHAR,
-            latitude DOUBLE,
-            longitude DOUBLE
-        )
-    """)
-
-    total = len(municipios)
-    for i, (cod, nome) in enumerate(municipios, 1):
-        print(f"[{i:3d}/{total}] Processando {nome}...")
+    total = len(df)
+    for i, row in df.iterrows():
+        nome = row["municipio"]
+        print(f"[{i + 1:3d}/{total}] Obtendo coordenadas de {nome}...")
         lat, lon = get_coords(nome)
-        if lat is not None:
-            conn.execute(
-                "INSERT INTO bronze.municipios_pe_geo VALUES (?, ?, ?, ?)",
-                (cod, nome, lat, lon),
-            )
-        else:
-            print("    -> NÃO encontrado!")
+        lats.append(lat)
+        lons.append(lon)
         time.sleep(1.1)
 
-    conn.close()
-    print("Tabela bronze.municipios_pe_geo criada com sucesso.")
+    df["latitude"] = lats
+    df["longitude"] = lons
+
+    # Salva no GCS
+    save_dataframe_to_gcs(
+        df,
+        bucket_key="geo_complementares",
+        filename="municipios_pe_geo.parquet",
+    )
+    print("Processamento IBGE concluído com sucesso.")
 
 
 if __name__ == "__main__":
     main()
+

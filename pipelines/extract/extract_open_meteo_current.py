@@ -5,12 +5,8 @@ import pandas as pd
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-try:
-    from pipelines.config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-    from pipelines.storage.duckdb_minio import get_duckdb_conn
-except ImportError:
-    from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-    from storage.duckdb_minio import get_duckdb_conn
+from config.settings import BUCKETS
+
 
 CITIES = {
     "Recife": (-8.0539, -34.8811),
@@ -29,11 +25,6 @@ CITIES = {
     "Araçoiaba": (-7.7819, -35.0489),
 }
 
-STORAGE_OPTIONS = {
-    "key": MINIO_ACCESS_KEY,
-    "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
-}
 
 
 def fetch_current() -> pd.DataFrame:
@@ -83,51 +74,39 @@ def fetch_current() -> pd.DataFrame:
     return df
 
 
-def save_to_minio(df: pd.DataFrame) -> str:
+def save_to_gcs(df: pd.DataFrame) -> str:
     if df.empty:
         print("[CURRENT] DataFrame vazio. Nenhum arquivo salvo.")
         return ""
 
-    bucket = BUCKETS.get("meteo_weather", "open-meteo-weather")
+    bucket = BUCKETS.get("meteo_weather")
     now = datetime.now()
     time_str = now.strftime("%H%M%S")
 
     df["uf"] = "PE"
     for (uf, ano, mes, dia), group in df.groupby(["uf", "ano", "mes", "dia"]):
-        s3_file_path = f"s3://{bucket}/current/uf={uf}/ano={ano}/mes={mes}/dia={dia}/current_{time_str}.parquet"
+        gcs_file_path = f"gs://{bucket}/current/uf={uf}/ano={ano}/mes={mes}/dia={dia}/current_{time_str}.parquet"
         group_to_save = group.drop(columns=["uf", "ano", "mes", "dia"])
         group_to_save.to_parquet(
-            s3_file_path,
+            gcs_file_path,
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS,
         )
 
-    print(f"[CURRENT] Sucesso! Arquivos nomeados salvos em s3://{bucket}/current/")
-    return f"s3://{bucket}/current/"
+    print(f"[CURRENT] Sucesso! Arquivos salvos em gs://{bucket}/current/")
+    return f"gs://{bucket}/current/"
 
 
 def update_bronze_view():
-    conn = get_duckdb_conn()
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
-    bucket = BUCKETS.get("meteo_weather", "open-meteo-weather")
-    s3_pattern = f"s3://{bucket}/current/**/*.parquet"
-
-    conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.open_meteo_current AS
-        SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
-    """)
-    conn.close()
-    print(
-        f"[CURRENT] VIEW bronze.open_meteo_current atualizada/verificada apontando para {s3_pattern}."
-    )
+    """Placeholder compatível para orquestração."""
+    pass
 
 
 def main():
     df = fetch_current()
-    save_to_minio(df)
-    update_bronze_view()
+    save_to_gcs(df)
+
 
 
 if __name__ == "__main__":

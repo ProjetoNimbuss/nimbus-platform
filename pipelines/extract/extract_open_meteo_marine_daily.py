@@ -5,12 +5,8 @@ import pandas as pd
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-try:
-    from pipelines.config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-    from pipelines.storage.duckdb_minio import get_duckdb_conn
-except ImportError:
-    from config.settings import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKETS
-    from storage.duckdb_minio import get_duckdb_conn
+from config.settings import BUCKETS
+
 
 COASTAL_POINTS = {
     "Recife - Boa Viagem": (-8.1200, -34.8800),
@@ -24,11 +20,6 @@ COASTAL_POINTS = {
     "Ipojuca - Porto de Galinhas": (-8.5100, -34.9800),
 }
 
-STORAGE_OPTIONS = {
-    "key": MINIO_ACCESS_KEY,
-    "secret": MINIO_SECRET_KEY,
-    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT},
-}
 
 
 def fetch_marine_daily() -> pd.DataFrame:
@@ -76,51 +67,39 @@ def fetch_marine_daily() -> pd.DataFrame:
     return df_total
 
 
-def save_to_minio(df_total: pd.DataFrame) -> str:
+def save_to_gcs(df_total: pd.DataFrame) -> str:
     if df_total.empty:
         print("[MARINE-DAILY] DataFrame vazio. Nenhum arquivo salvo.")
         return ""
 
-    bucket = BUCKETS.get("meteo_marine", "open-meteo-marine")
+    bucket = BUCKETS.get("meteo_marine")
     now = datetime.now()
     time_str = now.strftime("%H%M%S")
 
     df_total["uf"] = "PE"
     for (uf, dt_ext), group in df_total.groupby(["uf", "data_extracao"]):
-        s3_file_path = f"s3://{bucket}/forecast_daily/uf={uf}/data_extracao={dt_ext}/marine_daily_{time_str}.parquet"
+        gcs_file_path = f"gs://{bucket}/forecast_daily/uf={uf}/data_extracao={dt_ext}/marine_daily_{time_str}.parquet"
         group_to_save = group.drop(columns=["uf", "data_extracao"])
         group_to_save.to_parquet(
-            s3_file_path,
+            gcs_file_path,
             index=False,
             engine="pyarrow",
             compression="snappy",
-            storage_options=STORAGE_OPTIONS,
         )
 
-    print(f"[MARINE-DAILY] Sucesso! Arquivos nomeados salvos em s3://{bucket}/forecast_daily/")
-    return f"s3://{bucket}/forecast_daily/"
+    print(f"[MARINE-DAILY] Sucesso! Arquivos salvos em gs://{bucket}/forecast_daily/")
+    return f"gs://{bucket}/forecast_daily/"
 
 
 def update_bronze_view():
-    conn = get_duckdb_conn()
-    conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
-    bucket = BUCKETS.get("meteo_marine", "open-meteo-marine")
-    s3_pattern = f"s3://{bucket}/forecast_daily/**/*.parquet"
-
-    conn.execute(f"""
-        CREATE OR REPLACE VIEW bronze.open_meteo_marine_forecast_daily AS
-        SELECT * FROM read_parquet('{s3_pattern}', hive_partitioning=1)
-    """)
-    conn.close()
-    print(
-        f"[MARINE-DAILY] VIEW bronze.open_meteo_marine_forecast_daily atualizada/verificada apontando para {s3_pattern}."
-    )
+    """Placeholder compatível para orquestração."""
+    pass
 
 
 def main():
     df = fetch_marine_daily()
-    save_to_minio(df)
-    update_bronze_view()
+    save_to_gcs(df)
+
 
 
 if __name__ == "__main__":
