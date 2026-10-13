@@ -123,6 +123,11 @@ tasks:
       - docker-compose logs -f prometheus grafana cadvisor node-exporter
 
   # PIPELINES DE DADOS (PREFECT)
+  flow:deploy:
+    desc: Registra todos os fluxos como deployments agendados no Prefect Server
+    cmds:
+      - docker-compose exec prefect-worker python pipelines/flows/deploy.py
+
   flow:ingest:
     desc: Executa o fluxo completo de ingestão para o GCS no contêiner do worker
     cmds:

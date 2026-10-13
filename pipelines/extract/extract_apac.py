@@ -1,7 +1,6 @@
 import time
 import re
 import sys
-import os
 import logging
 from datetime import date
 from io import StringIO
@@ -14,8 +13,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import gcsfs
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import BASE_URL, BUCKETS
+try:
+    from pipelines.config.settings import BASE_URL, BUCKETS
+except ImportError:
+    from config.settings import BASE_URL, BUCKETS
 
 fs = gcsfs.GCSFileSystem()
 

@@ -1,15 +1,18 @@
-import os
-import sys
 import time
 import requests
 import pandas as pd
 from datetime import datetime, timezone
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import (
-    TOMORROW_IO_API_KEY,
-    BUCKETS,
-)
+try:
+    from pipelines.config.settings import (
+        TOMORROW_IO_API_KEY,
+        BUCKETS,
+    )
+except ImportError:
+    from config.settings import (
+        TOMORROW_IO_API_KEY,
+        BUCKETS,
+    )
 
 
 POLOS_SENTINELA = {

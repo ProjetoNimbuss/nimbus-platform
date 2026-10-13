@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from storage.gcs import save_dataframe_to_gcs
+from pipelines.storage.gcs import save_dataframe_to_gcs
 
 
 

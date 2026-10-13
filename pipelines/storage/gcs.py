@@ -1,6 +1,9 @@
 from datetime import datetime
 import pandas as pd
-from config.settings import BUCKETS, GCP_PROJECT_ID
+try:
+    from pipelines.config.settings import BUCKETS, GCP_PROJECT_ID
+except ImportError:
+    from config.settings import BUCKETS, GCP_PROJECT_ID
 
 
 
@@ -16,10 +19,7 @@ def save_dataframe_to_gcs(
     ref_date: datetime = None,
     filename: str = None,
 ) -> str:
-    """
-    Salva um DataFrame pandas no Google Cloud Storage em formato Parquet
-    com particionamento Hive (ano=YYYY/mes=MM/dia=DD).
-    """
+
     if df.empty:
         print(f"[GCS] DataFrame vazio para {bucket_key}. Nenhum arquivo salvo.")
         return ""

@@ -1,11 +1,11 @@
-import os
-import sys
 import requests
 import pandas as pd
 from datetime import datetime
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config.settings import BUCKETS
+try:
+    from pipelines.config.settings import BUCKETS
+except ImportError:
+    from config.settings import BUCKETS
 
 
 COASTAL_POINTS = {
