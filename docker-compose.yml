@@ -47,6 +47,9 @@ services:
     image: prefecthq/prefect:3-python3.11
     container_name: nimbus_prefect_server
     command: prefect server start --host 0.0.0.0
+    environment:
+      - PREFECT_SERVER_UI_API_URL=${PREFECT_SERVER_UI_API_URL:-http://100.82.176.36:4200/api}
+      - PREFECT_UI_API_URL=${PREFECT_SERVER_UI_API_URL:-http://100.82.176.36:4200/api}
     ports:
       - "4200:4200"
     restart: unless-stopped
