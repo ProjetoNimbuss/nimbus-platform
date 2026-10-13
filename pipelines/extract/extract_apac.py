@@ -1,7 +1,6 @@
 import time
 import re
 import sys
-import os
 import logging
 from datetime import date
 from io import StringIO

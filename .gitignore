@@ -57,6 +57,8 @@ next-env.d.ts
 *.pem
 *.key
 secrets.json
+*sa-key*.json
+gcp-sa-key.json
 
 # Banco de dados local
 *.duckdb
