@@ -1,22 +1,15 @@
+"""
+Script de Deploy de Fluxos no Prefect Server (Prefect 3)
+Registra os deployments para os workflows climaticos independentes do Nimbus
+no work pool default-agent-pool.
+"""
 from prefect import deploy, flow
 
 
 def deploy_all_flows():
-    print("[NIMBUS DEPLOY] Preparando deployments para o Prefect Server...")
+    print("[NIMBUS DEPLOY] Preparando deployments independentes para o Prefect Server...")
 
-    # 1. Fluxo Completo de Ingestao (Orquestrador Mestre)
-    flow_full = flow.from_source(
-        source="/app",
-        entrypoint="pipelines/flows/nimbus_ingestion_flow.py:nimbus_ingestion_flow",
-    )
-    dep_full = flow_full.to_deployment(
-        name="nimbus-full-ingestion-hourly",
-        cron="0 * * * *",
-        tags=["production", "weather", "full", "gcs"],
-        description="Ingestão completa de todas as fontes climáticas a cada 1 hora.",
-    )
-
-    # 2. Ingestao CEMADEN
+    # 1. Ingestao CEMADEN (Alta frequencia - Estacoes pluviometricas)
     flow_cemaden = flow.from_source(
         source="/app",
         entrypoint="pipelines/flows/cemaden_workflow.py:cemaden_flow",
@@ -25,10 +18,10 @@ def deploy_all_flows():
         name="cemaden-ingestion-15min",
         cron="*/15 * * * *",
         tags=["cemaden", "rainfall", "15min", "gcs"],
-        description="Ingestão de dados de estações pluviométricas CEMADEN a cada 15 minutos.",
+        description="Ingestao de dados de estacoes pluviometricas CEMADEN a cada 15 minutos.",
     )
 
-    # 3. Ingestao Tomorrow.io
+    # 2. Ingestao Tomorrow.io (Nowcasting 12h)
     flow_tomorrow = flow.from_source(
         source="/app",
         entrypoint="pipelines/flows/tomorrow_workflow.py:tomorrow_flow",
@@ -37,10 +30,10 @@ def deploy_all_flows():
         name="tomorrow-io-hourly",
         cron="0 * * * *",
         tags=["tomorrow-io", "forecast", "hourly", "gcs"],
-        description="Nowcasting e previsão meteorológica Tomorrow.io horária.",
+        description="Nowcasting e previsao meteorologica Tomorrow.io horaria.",
     )
 
-    # 4. Ingestao Open-Meteo (Tempo presente, previsões e dados marinhos)
+    # 3. Ingestao Open-Meteo (Tempo presente, previsoes e dados marinhos)
     flow_open_meteo = flow.from_source(
         source="/app",
         entrypoint="pipelines/flows/open_meteo_workflow.py:open_meteo_flow",
@@ -49,10 +42,10 @@ def deploy_all_flows():
         name="open-meteo-hourly",
         cron="0 * * * *",
         tags=["open-meteo", "marine", "hourly", "gcs"],
-        description="Previsões marinhas e tempo presente Open-Meteo para a RMR.",
+        description="Previsoes marinhas e tempo presente Open-Meteo para a RMR a cada 1 hora.",
     )
 
-    # 5. Ingestao APAC
+    # 4. Ingestao APAC (Scraping com Chrome headless)
     flow_apac = flow.from_source(
         source="/app",
         entrypoint="pipelines/flows/apac_workflow.py:apac_flow",
@@ -61,11 +54,11 @@ def deploy_all_flows():
         name="apac-scraping-daily",
         cron="0 6 * * *",
         tags=["apac", "scraping", "daily", "gcs"],
-        description="Scraping de acumulados pluviométricos da APAC executado diariamente às 06:00.",
+        description="Scraping de acumulados pluviometricos da APAC executado diariamente as 06:00.",
     )
 
+    # Registra apenas os fluxos modulares desacoplados
     deploy(
-        dep_full,
         dep_cemaden,
         dep_tomorrow,
         dep_open_meteo,
@@ -74,7 +67,7 @@ def deploy_all_flows():
         ignore_warnings=True,
     )
 
-    print("[NIMBUS DEPLOY] Todos os deployments foram registrados com sucesso no Prefect Server!")
+    print("[NIMBUS DEPLOY] Todos os deployments independentes foram registrados com sucesso!")
 
 
 if __name__ == "__main__":
