@@ -1,3 +1,4 @@
+from typing import Optional
 from prefect import flow, task
 from pipelines.extract.extract_apac import run_apac_scraper
 
@@ -10,10 +11,25 @@ task_scrape_apac = task(
 
 
 @flow(name="apac-ingestion-flow", log_prints=True)
-def apac_flow(ano_inicio: int = 1961, ano_fim: int = None):
-    """Fluxo Prefect para raspagem e ingestão da APAC diretamente no GCS."""
-    print("Iniciando fluxo de ingestão APAC...")
-    total = task_scrape_apac(ano_inicio=ano_inicio, ano_fim=ano_fim)
+def apac_flow(
+    ano_inicio: Optional[int] = None,
+    ano_fim: Optional[int] = None,
+    forcar_atualizacao: bool = False,
+):
+    """Fluxo Prefect para raspagem e ingestão da APAC diretamente no GCS.
+
+    Por padrão, atualiza apenas o ano corrente no GCS.
+    Para cargas históricas completas, informe ano_inicio (ex: 1961).
+    """
+    print(
+        f"Iniciando fluxo de ingestão APAC (ano_inicio={ano_inicio}, "
+        f"ano_fim={ano_fim}, forcar_atualizacao={forcar_atualizacao})..."
+    )
+    total = task_scrape_apac(
+        ano_inicio=ano_inicio,
+        ano_fim=ano_fim,
+        forcar_atualizacao=forcar_atualizacao,
+    )
     print(f"Fluxo APAC finalizado. Total de arquivos salvos: {total}.")
     return total
 
