@@ -3,6 +3,7 @@ import re
 import sys
 import logging
 from datetime import date
+from typing import Optional
 from io import StringIO
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -241,10 +242,22 @@ def update_bronze_view():
     pass
 
 
-def run_apac_scraper(ano_inicio: int = 1961, ano_fim: int = None) -> int:
-    """Executa o scraper da APAC para todas as mesorregiões e salva no GCS."""
+def run_apac_scraper(
+    ano_inicio: Optional[int] = None,
+    ano_fim: Optional[int] = None,
+    forcar_atualizacao: bool = False,
+) -> int:
+    """Executa o scraper da APAC para todas as mesorregiões e salva no GCS.
+
+    Por padrão, processa e atualiza apenas o ano corrente. Anos anteriores
+    (históricos) só são baixados se ainda não existirem no GCS ou se
+    forcar_atualizacao=True.
+    """
+    ano_atual = date.today().year
     if ano_fim is None:
-        ano_fim = date.today().year
+        ano_fim = ano_atual
+    if ano_inicio is None:
+        ano_inicio = ano_atual
 
     scraper = ScraperAPAC(headless=True)
     total_salvos = 0
@@ -261,11 +274,20 @@ def run_apac_scraper(ano_inicio: int = 1961, ano_fim: int = None) -> int:
 
             for ano in range(ano_inicio, ano_fim + 1):
                 gcs_path = f"gs://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
-                if fs.exists(gcs_path):
+
+                # Anos historicos (anteriores ao ano atual) sao imutaveis:
+                # se ja existirem e nao for forcada a atualizacao, pula.
+                # O ano atual (ano >= ano_atual) e sempre re-extraido e sobrescrito.
+                if ano < ano_atual and not forcar_atualizacao and fs.exists(gcs_path):
+                    log.info(f"  [SKIP] Ano historico {ano} ja existe no GCS: {gcs_path}")
                     continue
 
                 d_ini = f"01/01/{ano}"
-                d_fim = f"31/12/{ano}" if ano < ano_fim else date.today().strftime("%d/%m/%Y")
+                d_fim = (
+                    f"31/12/{ano}"
+                    if ano < ano_atual
+                    else date.today().strftime("%d/%m/%Y")
+                )
 
                 try:
                     # mesorregião já selecionada, agora define datas
