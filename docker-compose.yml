@@ -10,7 +10,9 @@ services:
       - ./api:/var/www/html
     working_dir: /var/www/html
     command: >
-      sh -c "composer install && php artisan serve --host=0.0.0.0 --port=8000"
+      sh -c "composer install --no-interaction &&
+             ([ -f .env ] || (cp .env.example .env && php artisan key:generate)) &&
+             php artisan serve --host=0.0.0.0 --port=8000"
     ports:
       - "8000:8000"
     environment:
