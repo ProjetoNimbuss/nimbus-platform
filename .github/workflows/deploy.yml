@@ -16,3 +16,11 @@ jobs:
           git reset --hard origin/main
           docker-compose up -d --build
           task flow:deploy
+
+      # Remove o cache de build do Docker para evitar que o disco da VM (20 GB) lote.
+      # Roda mesmo se o deploy falhar, já que disco cheio é uma causa comum de falha no build.
+      - name: Limpar cache de build do Docker
+        if: always()
+        run: |
+          docker builder prune -af
+          df -h /
