@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer para checagem periodica de espaco em disco do Nimbus (a cada 15 min)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

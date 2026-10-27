@@ -197,3 +197,19 @@ tasks:
       - pip install -r requirements.txt
       - pip install ruff pre-commit
       - pre-commit install
+
+  # MONITORAMENTO DE DISCO & ALERTAS
+  alert:disk:check:
+    desc: Executa a checagem pontual de espaço em disco
+    cmds:
+      - python3 monitoring/disk_alert/check_disk.py
+
+  alert:disk:test:
+    desc: Envia e-mail de teste imediato para os administradores
+    cmds:
+      - python3 monitoring/disk_alert/check_disk.py --test
+
+  alert:disk:install:
+    desc: Instala e ativa o systemd timer de monitoramento de disco na VM
+    cmds:
+      - bash monitoring/disk_alert/install.sh

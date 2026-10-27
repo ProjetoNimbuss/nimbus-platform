@@ -1,0 +1,13 @@
+[Unit]
+Description=Nimbus VM Disk Full Monitor & Email Alert
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=debian
+WorkingDirectory=/home/debian/nimbus-platform
+EnvironmentFile=-/home/debian/nimbus-platform/.env
+EnvironmentFile=-/etc/nimbus/disk_alert.env
+ExecStart=/usr/bin/python3 /home/debian/nimbus-platform/monitoring/disk_alert/check_disk.py
+StandardOutput=journal
+StandardError=journal
