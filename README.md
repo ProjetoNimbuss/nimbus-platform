@@ -2,7 +2,6 @@
 
 <img src="docs/assets/nimbus_logo.png" alt="Nimbus — Sistema de Monitoramento e Alertas" width="480"/>
 
-
 ### Sistema Integrado de Dados e Alertas Meteorológicos
 
 **Monitoramento em tempo real · Alertas preventivos · Inteligência climática para a RMR**
@@ -10,11 +9,14 @@
 ---
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![DuckDB](https://img.shields.io/badge/DuckDB-OLAP-FFF000?style=flat-square&logo=duckdb&logoColor=black)](https://duckdb.org)
-[![dbt](https://img.shields.io/badge/dbt-Core-FF694B?style=flat-square&logo=dbt&logoColor=white)](https://getdbt.com)
-[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Google Cloud](https://img.shields.io/badge/Google_Cloud-GCS_%26_BigQuery-4285F4?style=flat-square&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Dataform](https://img.shields.io/badge/Dataform-SQLX-blue?style=flat-square&logo=googlebigquery&logoColor=white)](https://cloud.google.com/dataform)
+[![Prefect](https://img.shields.io/badge/Prefect-3.x-024DFD?style=flat-square&logo=prefect&logoColor=white)](https://www.prefect.io)
+[![Laravel](https://img.shields.io/badge/Laravel-11-FF2D20?style=flat-square&logo=laravel&logoColor=white)](https://laravel.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Next.js](https://img.shields.io/badge/Next.js-Frontend-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![MinIO](https://img.shields.io/badge/MinIO-S3%20Storage-C72E49?style=flat-square&logo=minio&logoColor=white)](https://min.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
+[![Observability](https://img.shields.io/badge/Observability-Prometheus_%26_Grafana-F46800?style=flat-square&logo=prometheus&logoColor=white)](https://prometheus.io)
 
 </div>
 
@@ -22,154 +24,214 @@
 
 ## 🌧️ O Problema
 
-A Região Metropolitana do Recife é historicamente uma das áreas mais vulneráveis a eventos climáticos extremos no Brasil. Enchentes, deslizamentos, ressacas e tempestades afetam periodicamente milhões de pessoas.
+A **Região Metropolitana do Recife (RMR)** é historicamente uma das áreas urbanas mais vulneráveis a desastres climáticos extremos no Brasil. Tempestades severas, enchentes, deslizamentos de encostas e ressacas marinhas colocam milhões de vidas em risco periodicamente.
 
-A fragmentação das fontes de dados climáticos (distribuídas entre APAC, CEMADEN, IBGE, APIs globais e órgãos federais), aliada à ausência de uma plataforma centralizada e acessível, cria um gargalo crítico na cadeia de alertas.
+Historicamente, as informações climáticas operam de forma isolada: dados pluviométricos (APAC, CEMADEN), modelos de previsão numérica globais e estatísticas sociodemográficas (IBGE) estão dispersos em portais distintos, com formatos heterogêneos e sem uma camada de inteligência integrada.
 
-**O Nimbus existe para mudar isso.**
+**O Nimbus existe para conectar esses pontos e antecipar o impacto.**
 
 ---
 
 ## 🎯 O Que é o Nimbus
 
-O **Nimbus** é uma plataforma de monitoramento e inteligência climática construída para a Região Metropolitana do Recife. Integramos dados de múltiplas fontes em uma única infraestrutura de dados, processamos em tempo real e entregamos alertas, previsões e análises históricas.
+O **Nimbus** é uma plataforma analítica e operacional de monitoramento e inteligência climática de alta resolução construída especificamente para a Região Metropolitana do Recife.
 
-> *Nimbus é a palavra latina para nuvem de tempestade, a nuvem que anuncia a chuva antes que ela chegue.*
+A plataforma automatiza a ingestão de dados em tempo real, organiza um Data Lakehouse em nuvem (arquitetura Medallion), processa transformações no BigQuery via Dataform e expõe insights analíticos, painéis e APIs para subsidiar decisões preventivas e defesa civil.
+
+> *Nimbus é a palavra em latim para nuvem de tempestade — aquela que anuncia a chuva antes de ela chegar.*
 
 ---
 
 ## 📦 O Que Entregamos
 
 ### 🔴 Monitoramento em Tempo Real
-Leitura contínua de temperatura, umidade, precipitação e velocidade do vento para os **14 municípios da RMR**, alimentada por modelos globais de alta resolução (GFS e ECMWF).
+Coleta contínua de temperatura, umidade, índice UV, velocidade/rajadas de vento e precipitação para os **14 municípios da RMR**, integrando dados observados e modelos de alta resolução.
 
-### ⚠️ Alertas Preventivos
-Sistema de alertas baseado em limiares configuráveis para eventos extremos: **enchentes, tempestades severas e ressacas**. Os alertas são emitidos com antecedência, permitindo ação antes do impacto.
+### ⚠️ Alertas Preventivos e Nowcasting
+Algoritmos orientados a limiares críticos configuráveis para detecção antecipada de eventos extremos: enchentes, deslizamentos e tempestades severas (com horizontes de 15 minutos a 12 horas).
 
 ### 🌊 Previsão Oceânica e Costeira
-Monitoramento de condições marinhas, altura e período de ondas, swell e correntes, isso em **9 pontos costeiros da RMR**, incluindo Porto do Recife, Porto de Suape e as principais praias urbanas.
+Monitoramento contínuo das condições marítimas em **9 pontos costeiros estratégicos da RMR** (incluindo o Porto do Recife, Porto de Suape e principais orlas), com leituras de altura/período de ondas, direção do swell e ventos marítimos.
 
-### 📅 Histórico Climático desde 1961
-Acesso à série histórica de pluviometria de Pernambuco (dados APAC), abrangendo **5 mesorregiões** do estado desde 1961. Base fundamental para análise de tendências e dimensionamento de riscos.
+### 📅 Série Histórica desde 1961
+Integração e preservação histórica de pluviometria do estado de Pernambuco (APAC), cobrindo as 5 mesorregiões desde 1961, permitindo análises comparativas e identificação de anomalias climáticas.
 
 ### 🧑‍🤝‍🧑 Vulnerabilidade Sociodemográfica
-Correlação dos dados climáticos com informações demográficas e domiciliares do **Censo IBGE 2022 por bairro**, permitindo identificar e priorizar áreas de maior vulnerabilidade social a eventos extremos.
+Cruzamento dos dados de telemetria climática com informações censitárias do **IBGE 2022** por setor e bairro, permitindo mapear a população exposta e priorizar áreas de maior vulnerabilidade habitacional.
 
-### 📍 Reports de Condições pelos Usuários
-Canal direto para que cidadãos e equipes de campo reportem condições climáticas e riscos em tempo real, enriquecendo os dados com informações de contexto local.
-
-### 📊 Dashboard Público
-Interface visual acessível para consulta de condições atuais, previsões e histórico climático da RMR.
+### 📍 Relatos Colaborativos de Campo
+Canal direto na API para registro de ocorrências pelos cidadãos e agentes locais (alagamentos, desabamentos, quedas de árvores), enriquecendo os modelos com validação em solo.
 
 ---
 
-## 🗄️ Fontes de Dados
+## 🗄️ Fontes de Dados Integradas
 
-O Nimbus agrega dados de fontes abertas, oficiais e especializadas:
-
-| Fonte | Tipo | Dados |
-| :--- | :--- | :--- |
-| **Open-Meteo** | API Gratuita | Condições atuais e previsão meteorológica (7 dias) |
-| **Open-Meteo Marine** | API Gratuita | Condições oceânicas e previsão de ondas (5 dias) |
-| **Tomorrow.io** | API (Freemium) | Nowcasting e previsão de alta precisão (12h) |
-| **CEMADEN / APAC** | API Interna | Telemetria pluviométrica em tempo real — PE |
-| **APAC PE** | Web Scraping | Série histórica pluviométrica desde 1961 |
-| **IBGE Censo 2022** | Carga Estática | Dados demográficos e domiciliares por bairro |
-| **IBGE GPKG** | Carga Estática | Malha vetorial de bairros de Pernambuco |
-| **REINDESC** | Carga Estática | Histórico de ocorrências de desastres naturais |
+| Fonte | Mecanismo | Frequência | Dados Coletados |
+| :--- | :--- | :--- | :--- |
+| **CEMADEN** | API REST | A cada 15 min | Telemetria pluviométrica de estações automáticas da RMR |
+| **Open-Meteo** | API REST | A cada 1h | Condições atuais e previsão horária/diária de tempo |
+| **Open-Meteo Marine** | API REST | A cada 1h | Condições marítimas, ondas, swell e marés em 9 pontos |
+| **Tomorrow.io** | API REST | A cada 1h | Nowcasting meteorológico hiperlocal de alta precisão |
+| **APAC PE** | Web Scraping Headless | Diário | Pluviometria diária e série histórica desde 1961 |
+| **IBGE Censo 2022** | Carga Analítica | Estático | Indicadores de população, domicílios e densidade |
+| **IBGE Malha GPKG** | Geoprocessamento | Estático | Polígonos e limites territoriais de bairros e municípios |
 
 ---
 
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura da Plataforma
 
-O Nimbus é construído sobre uma arquitetura **Medallion** (Raw → Bronze → Silver → Gold), com infraestrutura local hoje e migração planejada para GCP e MagaluCloud.
+O Nimbus adota o padrão **Medallion Architecture (Lakehouse)** com processamento em nuvem no **Google Cloud Platform (GCP)** e infraestrutura de orquestração dedicada na **MagaluCloud**:
 
 ```
-Fontes Externas (APIs, Scraping, Arquivos)
-        │
-        ▼
-   📦 Data Lake — MinIO S3 (Parquet + Hive Partitioning)
-        │
-        ▼
-   🥉 Bronze — DuckDB (nimbus.duckdb)
-   VIEWs sobre S3 + Tabelas físicas para dados estáticos
-        │
-        ▼
-   🥈 Silver — dbt Core
-   Limpeza, padronização, enriquecimento
-        │
-        ▼
-   🥇 Gold — dbt Core
-   Métricas, agregações, datasets analíticos
-        │
-        ▼
-   ⚡ FastAPI          🌐 Next.js
-   (API REST)          (Dashboards Públicos)
+ [Fontes Externas] (APIs REST / Web Scraping Headless)
+         │
+         ▼  (Orquestrado via Prefect 3)
+ 🥉 CAMADA BRONZE (Google Cloud Storage)
+    gs://nimbus-506613-bronze-* (Arquivos Parquet particionados por data)
+         │
+         ▼  (Transformações SQLX via GCP Dataform)
+ 🥈 CAMADA SILVER (Google BigQuery)
+    Dados limpos, tipados, deduplicados e enriquecidos com metadados
+         │
+         ▼  (Transformações SQLX via GCP Dataform)
+ 🥇 CAMADA GOLD (Google BigQuery)
+    Agregações analíticas, matrizes de risco, acumulados pluviométricos e demografia
+         │
+    ┌────┴───────────────────────────┐
+    ▼                                ▼
+⚡ Laravel 11 REST API          🌐 Next.js Dashboard
+(Rotas, Autenticação,             (Interface visual, mapas,
+ Relatos de Usuários)              painéis de monitoramento)
 ```
 
-**Stack completa:**
-- **Ingestão:** Python 3.12, requests, pandas, selenium, pyarrow, s3fs
-- **Storage:** MinIO (local) → Google Cloud Storage (nuvem)
-- **Banco Analítico:** DuckDB → BigQuery (GCP)
-- **Transformação:** dbt Core
-- **Orquestração:** Prefect *(em implantação)*
-- **API:** FastAPI
-- **Frontend:** Next.js
-- **Nuvem:** GCP (BigQuery, GCS, Cloud Run) + MagaluCloud (VM )
+### Divisão de Infraestrutura:
+* **Google Cloud Platform (GCP):**
+  * **Google Cloud Storage (GCS):** Data Lake com buckets particionados por fonte na camada Bronze.
+  * **Google BigQuery:** Data Warehouse corporativo para dados Silver e Gold.
+  * **Google Dataform:** Pipeline de engenharia de dados declarativo em SQLX para governança e transformação.
+* **VM Dedicada (MagaluCloud - Debian):**
+  * Hospeda o **Prefect Server** e **Prefect Worker** executando os pipelines em regime 24/7.
+  * Hospeda a stack completa de **Observabilidade** e o runner de deploy contínuo (`self-hosted`).
 
 ---
 
-## 📚 Documentação
+## 🛠️ Stack Tecnológica
 
-| Documento | Descrição |
+| Camada | Tecnologias Utilizadas |
 | :--- | :--- |
-| [Arquitetura de Dados](docs/arquitetura_dados.md) | Stack, ferramentas, justificativas e plano de migração para nuvem |
-| [Ingestão de Dados — Bronze](docs/ingestao_dados_bronze.md) | Fontes, scripts, buckets, views e tabelas da camada Bronze |
+| **Ingestão & Pipelines** | Python 3.12, Requests, Pandas, Selenium (Chrome Headless), PyArrow, GCSfs |
+| **Orquestração** | Prefect 3 (Server, Worker autônomo, agendamentos cron/interval) |
+| **Data Lake & DW** | Google Cloud Storage (GCS) e Google BigQuery |
+| **Transformações** | GCP Dataform (SQLX, assertions, dependências modulares) |
+| **Backend & API** | PHP 8.2, Laravel 11, PostgreSQL 18 |
+| **Frontend** | TypeScript, Next.js, React, Tailwind CSS |
+| **Observabilidade** | Prometheus, Grafana, Node Exporter, cAdvisor |
+| **DevOps & Automação** | Docker Compose, Taskfile (`go-task`), GitHub Actions CI/CD |
 
 ---
 
 ## 🗂️ Estrutura do Repositório
 
-```
+```text
 nimbus-platform/
-├── api/            # Backend (Laravel)
-├── docs/           # Documentação técnica e assets
-├── flows/          # Orquestração de pipelines (Prefect)
-├── pipeline/       # Ingestão de dados por fonte
-│   ├── config/     # Configurações centralizadas
-│   ├── extract/    # Scripts de extração (Open-Meteo, CEMADEN, APAC, IBGE…)
-│   └── storage/    # Utilitários MinIO & DuckDB
-├── transform/      # Modelos dbt
-│   └── models/
-│       ├── bronze/ # Staging e fontes brutas
-│       ├── silver/ # Limpeza e padronização
-│       └── gold/   # Métricas e agregações analíticas
-├── web/            # Frontend (Next.js)
-├── docker-compose.yml
-├── Taskfile.yml
-└── .env.example
+├── api/                # Backend Laravel 11 (Rotas REST, migrations, controllers, models)
+├── data/               # Dados estáticos auxiliares (metadados e geoespaciais)
+├── dataform/           # Repositório GCP Dataform (modelos SQLX Bronze, Silver, Gold)
+│   ├── definitions/    # Definições de tabelas, views e assertions
+│   └── includes/       # Constantes e funções compartilhadas
+├── docs/               # Documentação técnica de arquitetura, redes e guias de uso
+├── monitoring/         # Configurações de observabilidade (Prometheus & Grafana)
+│   ├── grafana/        # Provisionamento automático de datasources e dashboards
+│   └── prometheus/     # Coleta de métricas e regras de monitoramento
+├── pipelines/          # Engenharia de dados e ingestão em Python
+│   ├── config/         # Configurações globais e schemas
+│   ├── extract/        # Scripts de coleta (APAC, CEMADEN, Open-Meteo, Tomorrow.io)
+│   ├── flows/          # Workflows do Prefect e Dockerfile do Worker
+│   └── storage/        # Adaptador de persistência no Google Cloud Storage (GCS)
+├── web/                # Frontend em Next.js (Painel público, mapas e alertas)
+├── docker-compose.yml  # Definição multi-container de todos os serviços locais/produção
+├── Taskfile.yml        # Automação de comandos do ciclo de vida da aplicação
+└── .env.example        # Modelo de variáveis de ambiente
 ```
 
 ---
 
-## 🚀 Status do Projeto
+## ⚡ Guia Rápido de Execução (Quickstart)
 
-| Componente | Status |
-| :--- | :--- |
-| Ingestão de dados (Bronze) | ✅ Implementado |
-| Data Lake (MinIO) | ✅ Implementado |
-| Camada Silver/Gold (dbt) | 🔄 Em desenvolvimento |
-| Orquestração (Prefect) | 📋 Planejado |
-| API (FastAPI) | 🔄 Em desenvolvimento |
-| Dashboard (Next.js) | 🔄 Em desenvolvimento |
-| Migração GCP/MagaluCloud | 📋 Planejado |
+O projeto utiliza o **[Taskfile (`go-task`)](https://taskfile.dev)** para automação de tarefas.
+
+### 1. Pré-requisitos
+* **Docker** e **Docker Compose** instalados
+* **Taskfile (`go-task`)** instalado ([guia de instalação](docs/documentacao_taskfile_e_provisionamento.md))
+
+### 2. Configurar o Ambiente
+Copie o modelo de variáveis de ambiente e preencha as chaves necessárias (GCP, APIs):
+```bash
+cp .env.example .env
+```
+
+### 3. Provisionar a Infraestrutura
+Para subir todos os serviços e rodar as migrações automaticamente:
+```bash
+task setup
+```
+
+### 4. Portas e Serviços Locais
+Após a inicialização, os serviços estarão disponíveis nos seguintes endereços:
+
+| Serviço | Endereço | Descrição |
+| :--- | :--- | :--- |
+| 🌐 **Next.js Web** | `http://localhost:8080` | Interface visual do usuário final |
+| ⚡ **Laravel API** | `http://localhost:8000` | Backend e endpoints REST |
+| 🎛️ **Prefect UI** | `http://localhost:4200` | Painel de controle e histórico de pipelines |
+| 📈 **Grafana** | `http://localhost:3001` | Dashboards de métricas *(admin / admin)* |
+| 🔍 **Prometheus** | `http://localhost:9090` | Servidor de métricas |
+| 🐘 **PostgreSQL** | `localhost:5432` | Banco relacional da API (`nimbus_app`) |
+
+### Comandos Úteis do Taskfile
+```bash
+task --list         # Lista todos os comandos disponíveis
+task status         # Exibe o status de todos os contêineres
+task logs           # Exibe logs de todos os serviços em tempo real
+task up:pipelines   # Sobe apenas o Prefect Server e Worker
+task flow:deploy    # Registra os fluxos como deployments agendados no Prefect
+task migrate        # Executa as migrations do Laravel
+```
+
+---
+
+## 📚 Documentação Técnica Complementar
+
+Para aprofundamento técnico, consulte os documentos detalhados na pasta [`docs/`](docs/):
+
+* [Plano Diretor e Arquitetura do Nimbus](docs/plano_diretor_arquitetura.md)
+* [Documentação da Arquitetura de Dados](docs/documentacao_arquitetura_dados.md)
+* [Guia de Ingestão e Camada Bronze](docs/Documentacao_Ingestao_bronze.md)
+* [Guia de Provisionamento e Uso do Taskfile](docs/documentacao_taskfile_e_provisionamento.md)
+* [Documentação dos Modelos Dataform](dataform/README.md)
+* [Contrato das Rotas da API](docs/api-contrato.md)
+* [Estratégia de Branches e Versionamento](docs/estrategia-de-branches.md)
+
+---
+
+## 🚀 Status dos Módulos
+
+| Módulo | Componente | Status |
+| :--- | :--- | :--- |
+| Ingestão de Dados (Bronze) | Python + GCS | ✅ Operacional em Produção |
+| Orquestração de Fluxos | Prefect 3 (Server + Worker na VM) | ✅ Operacional 24/7 |
+| Data Warehouse | BigQuery (Bronze, Silver, Gold) | ✅ Operacional |
+| Transformações Analíticas | GCP Dataform (SQLX) | ✅ Modelos estruturados |
+| Backend & API REST | Laravel 11 + PostgreSQL | ✅ Operacional |
+| Observabilidade & Métricas | Prometheus + Grafana + cAdvisor | ✅ Operacional |
+| Frontend & Dashboards | Next.js | 🔄 Em desenvolvimento ativo |
+| Deploy Contínuo (CI/CD) | GitHub Actions (Self-Hosted Runner na VM) | ✅ Automatizado |
 
 ---
 
 <div align="center">
 
-**Nimbus · Região Metropolitana do Recife · 2026**
-
-*Dados que salvam vidas.*
+**Nimbus · Região Metropolitana do Recife · 2026**  
+*Dados e tecnologia que antecipam tempestades e salvam vidas.*
 
 </div>
