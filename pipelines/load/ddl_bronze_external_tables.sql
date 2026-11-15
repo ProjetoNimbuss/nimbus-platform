@@ -1,15 +1,3 @@
--- =============================================================================
--- PROJETO NIMBUS — PLATAFORMA DE MONITORAMENTO E ALERTAS CLIMÁTICOS
--- Camada: Bronze (External Tables)
--- Engine: Google Cloud BigQuery
--- Projeto GCP: nimbus-506613
--- Dataset: nimbus_bronze_prod
--- =============================================================================
-
--- -----------------------------------------------------------------------------
--- 1. CEMADEN: Telemetria Pluviométrica em Tempo Real
--- Particionamento Hive: ano=YYYY / mes=MM / dia=DD
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.cemaden_telemetria`
 WITH PARTITION COLUMNS (
   ano INT64,
@@ -20,13 +8,10 @@ OPTIONS (
   format = 'PARQUET',
   uris = ['gs://nimbus-506613-bronze-cemaden/ano=*'],
   hive_partition_uri_prefix = 'gs://nimbus-506613-bronze-cemaden/',
-  description = 'Telemetria de estações pluviométricas automáticas CEMADEN (leitura bruta)'
+  description = 'Telemetria de estações pluviométricas automáticas CEMADEN (bruta)'
 );
 
--- -----------------------------------------------------------------------------
--- 2. OPEN-METEO WEATHER: Condições Meteorológicas Terrestres Atuais
--- Particionamento Hive: current/uf=XX / ano=YYYY / mes=MM / dia=DD
--- -----------------------------------------------------------------------------
+
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_weather_current`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -38,13 +23,9 @@ OPTIONS (
   format = 'PARQUET',
   uris = ['gs://nimbus-506613-bronze-open-meteo-weather/current/uf=*'],
   hive_partition_uri_prefix = 'gs://nimbus-506613-bronze-open-meteo-weather/current/',
-  description = 'Condições meteorológicas terrestres atuais Open-Meteo para municípios monitorados'
+  description = 'Condições meteorológicas terrestres atuais Open-Meteo'
 );
 
--- -----------------------------------------------------------------------------
--- 3. OPEN-METEO WEATHER: Previsão Horária Terrestre (Horizonte 7 dias)
--- Particionamento Hive: forecast_hourly/uf=XX / data_extracao=YYYY-MM-DD
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_weather_hourly`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -57,10 +38,6 @@ OPTIONS (
   description = 'Previsão meteorológica horária terrestre de 7 dias da Open-Meteo'
 );
 
--- -----------------------------------------------------------------------------
--- 4. OPEN-METEO WEATHER: Previsão Diária Terrestre (Horizonte 7 dias)
--- Particionamento Hive: forecast_daily/uf=XX / data_extracao=YYYY-MM-DD
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_weather_daily`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -73,10 +50,7 @@ OPTIONS (
   description = 'Previsão meteorológica diária agregada de 7 dias da Open-Meteo'
 );
 
--- -----------------------------------------------------------------------------
--- 5. OPEN-METEO MARINE: Condições Oceanográficas Costeiras Atuais
--- Particionamento Hive: current/uf=XX / ano=YYYY / mes=MM / dia=DD
--- -----------------------------------------------------------------------------
+
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_marine_current`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -91,10 +65,6 @@ OPTIONS (
   description = 'Condições marítimas e de ondas atuais em pontos costeiros'
 );
 
--- -----------------------------------------------------------------------------
--- 6. OPEN-METEO MARINE: Previsão Horária Marítima (Horizonte 5 dias)
--- Particionamento Hive: forecast_hourly/uf=XX / data_extracao=YYYY-MM-DD
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_marine_hourly`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -107,10 +77,6 @@ OPTIONS (
   description = 'Previsão horária de ondas, maré e correntes para pontos costeiros'
 );
 
--- -----------------------------------------------------------------------------
--- 7. OPEN-METEO MARINE: Previsão Diária Marítima (Horizonte 5 dias)
--- Particionamento Hive: forecast_daily/uf=XX / data_extracao=YYYY-MM-DD
--- -----------------------------------------------------------------------------
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.open_meteo_marine_daily`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -123,10 +89,7 @@ OPTIONS (
   description = 'Previsão diária de ondas (altura máxima, direção dominante) para pontos costeiros'
 );
 
--- -----------------------------------------------------------------------------
--- 8. TOMORROW.IO: Previsão Nowcasting de Alta Resolução (Pólos Sentinela)
--- Particionamento Hive: hourly_forecast/uf=XX / data_ingestao=YYYY-MM-DD
--- -----------------------------------------------------------------------------
+
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.tomorrow_hourly_forecast`
 WITH PARTITION COLUMNS (
   uf STRING,
@@ -139,10 +102,7 @@ OPTIONS (
   description = 'Previsão nowcasting horária de alta resolução para pólos sentinela da RMR'
 );
 
--- -----------------------------------------------------------------------------
--- 9. APAC: Série Histórica Pluviométrica por Mesorregião
--- Padrão de Arquivos: {Mesorregiao}_{Ano}.parquet
--- -----------------------------------------------------------------------------
+
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.apac_historico`
 OPTIONS (
   format = 'PARQUET',
@@ -150,10 +110,7 @@ OPTIONS (
   description = 'Série histórica de monitoramento pluviométrico mensal APAC PE desde 1961'
 );
 
--- -----------------------------------------------------------------------------
--- 10. IBGE: Malha e Coordenadas dos Municípios de Pernambuco
--- Arquivo Único: municipios_pe_geo.parquet
--- -----------------------------------------------------------------------------
+
 CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.ibge_municipios_pe`
 OPTIONS (
   format = 'PARQUET',
