@@ -41,6 +41,55 @@ MESORREGIOES = {
 COLUNAS_ESPERADAS = ["Código", "Posto", "Mês/Ano"]
 
 
+def padronizar_colunas_apac(colunas):
+    """
+    Padroniza os nomes das colunas da APAC para conformidade estrita com o BigQuery:
+    - Dias do mês ('01', '1', etc.) tornam-se 'dia_01', 'dia_02', etc.
+    - Caracteres especiais e acentos são substituídos (ex: 'Mês/Ano' -> 'mes_ano', 'Código' -> 'codigo').
+    - Nomes ficam em minúsculas e usando apenas letras, números e underscores.
+    """
+    mapa_especifico = {
+        "código": "codigo",
+        "posto": "posto",
+        "mês/ano": "mes_ano",
+        "mes/ano": "mes_ano",
+        "município": "municipio",
+        "municipio": "municipio",
+        "média": "media",
+        "media": "media",
+        "total": "total",
+    }
+    novas_colunas = []
+    for col in colunas:
+        c_str = str(col).strip()
+        if c_str.isdigit():
+            novas_colunas.append(f"dia_{int(c_str):02d}")
+        else:
+            c_lower = c_str.lower()
+            if c_lower in mapa_especifico:
+                novas_colunas.append(mapa_especifico[c_lower])
+            else:
+                c_clean = (
+                    c_lower
+                    .replace("/", "_")
+                    .replace(" ", "_")
+                    .replace("-", "_")
+                    .replace("ç", "c")
+                    .replace("ã", "a")
+                    .replace("á", "a")
+                    .replace("à", "a")
+                    .replace("é", "e")
+                    .replace("ê", "e")
+                    .replace("í", "i")
+                    .replace("ó", "o")
+                    .replace("ô", "o")
+                    .replace("ú", "u")
+                )
+                c_clean = re.sub(r"[^a-z0-9_]", "", c_clean)
+                novas_colunas.append(c_clean)
+    return novas_colunas
+
+
 class ScraperAPAC:
     def __init__(self, headless: bool = False):
         options = webdriver.ChromeOptions()
@@ -299,6 +348,7 @@ def run_apac_scraper(
                     if not df.empty:
                         df["mesorregiao_id"] = cod_id
                         df["ano_ref"] = ano
+                        df.columns = padronizar_colunas_apac(df.columns)
                         df.to_parquet(gcs_path, index=False)
                         log.info(f"  [OK] {ano}: {len(df)} registros salvos no GCS.")
                         total_salvos += 1
