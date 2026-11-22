@@ -1,0 +1,36 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "marine"],
+  uniqueKey: ["ponto", "data_hora"],
+  bigquery: {
+    partitionBy: "DATE(data_hora)",
+    clusterBy: ["ponto"]
+  },
+  description: "Condições oceanográficas e de ondas atuais em pontos costeiros de PE."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(timestamp AS TIMESTAMP) AS data_hora,
+    TRIM(ponto) AS ponto,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    SAFE_CAST(wave_height AS FLOAT64) AS onda_altura_m,
+    SAFE_CAST(wave_period AS FLOAT64) AS onda_periodo_s,
+    SAFE_CAST(wave_direction AS INT64) AS onda_direcao_graus,
+    SAFE_CAST(swell_wave_height AS FLOAT64) AS swell_altura_m,
+    SAFE_CAST(swell_wave_period AS FLOAT64) AS swell_periodo_s,
+    SAFE_CAST(swell_wave_direction AS INT64) AS swell_direcao_graus,
+    SAFE_CAST(ocean_current_velocity AS FLOAT64) AS corrente_velocidade_ms,
+    SAFE_CAST(ocean_current_direction AS INT64) AS corrente_direcao_graus
+  FROM ${ref("open_meteo_marine_current")}
+  WHERE timestamp IS NOT NULL AND ponto IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY ponto, data_hora 
+  ORDER BY data_hora DESC
+) = 1

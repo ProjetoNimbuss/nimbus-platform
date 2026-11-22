@@ -1,0 +1,48 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "cemaden", "telemetria"],
+  uniqueKey: ["codigo_estacao", "data_hora"],
+  bigquery: {
+    partitionBy: "DATE(data_hora)",
+    clusterBy: ["cidade", "codigo_estacao"]
+  },
+  description: "Telemetria de chuva das estações automáticas CEMADEN normalizada e deduplicada."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_hora AS TIMESTAMP) AS data_hora,
+    TRIM(codigo_gmmc) AS codigo_estacao,
+    COALESCE(NULLIF(TRIM(nome_estacao), ""), NULLIF(TRIM(estacao_nome), "")) AS nome_estacao,
+    UPPER(TRIM(cidade)) AS cidade,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    CASE
+      WHEN SAFE_CAST(chuva AS FLOAT64) >= 0 THEN SAFE_CAST(chuva AS FLOAT64)
+      ELSE NULL
+    END AS chuva_mm,
+    NULLIF(TRIM(tipo), "") AS tipo_estacao,
+    SAFE_CAST(ingestao_ts AS TIMESTAMP) AS ingestao_ts
+  FROM ${ref("cemaden_telemetria")}
+  WHERE data_hora IS NOT NULL
+    AND codigo_gmmc IS NOT NULL
+)
+
+SELECT
+  data_hora,
+  codigo_estacao,
+  nome_estacao,
+  cidade,
+  uf,
+  latitude,
+  longitude,
+  chuva_mm,
+  tipo_estacao,
+  ingestao_ts
+FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY codigo_estacao, data_hora 
+  ORDER BY ingestao_ts DESC
+) = 1
