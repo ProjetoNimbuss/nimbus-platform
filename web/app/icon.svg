@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="nimbus-cloud" x1="12" y1="14" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7DD3FC" />
+      <stop offset="50%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M19.5 49h26.5c6.08 0 11-4.92 11-11 0-5.47-3.99-10.01-9.22-10.86C46.53 19.67 40.04 14 32.25 14c-7.55 0-13.86 5.33-15.37 12.43C11.27 27.32 7 32.16 7 38c0 6.08 4.92 11 11 11h1.5z"
+    fill="url(#nimbus-cloud)"
+    stroke="#E0F2FE"
+    stroke-width="2.5"
+    stroke-linejoin="round"
+  />
+</svg>
