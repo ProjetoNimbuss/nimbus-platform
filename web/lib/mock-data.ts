@@ -8,6 +8,13 @@ import {
   ExtremeEvent, SeasonalComparison, ForecastDay, ForecastHour,
   FloodPoint, RegionalOverview,
 } from "./types";
+import { getRecifeDateParts } from "./utils";
+
+// ---- Helper: Recife-anchored calendar Date (prevents UTC/BRT SSR hydration mismatches) ----
+function getRecifeBaseUtcDate(): Date {
+  const { year, month, day } = getRecifeDateParts();
+  return new Date(Date.UTC(year, month - 1, day));
+}
 
 // ---- Deterministic Random Generator to prevent hydration mismatches ----
 let seed = 12345;
@@ -115,7 +122,7 @@ export const mockStations: Station[] = [
 // ---- Monitoring Records (last 30 days) ----
 function generateMonitoringData(): MonitoringRecord[] {
   const records: MonitoringRecord[] = [];
-  const now = new Date();
+  const now = getRecifeBaseUtcDate();
   const alertLevels: Array<{ level: string; threshold: number }> = [
     { level: "Grande Perigo", threshold: 50 },
     { level: "Perigo", threshold: 25 },
@@ -126,7 +133,7 @@ function generateMonitoringData(): MonitoringRecord[] {
   for (const station of mockStations) {
     for (let d = 0; d < 30; d++) {
       const date = new Date(now);
-      date.setDate(date.getDate() - d);
+      date.setUTCDate(date.getUTCDate() - d);
       const baseRain = d < 3 ? 20 + random() * 60 : random() * 30;
       const rain = random() > 0.3 ? Math.round(baseRain * 10) / 10 : 0;
 
@@ -141,14 +148,14 @@ function generateMonitoringData(): MonitoringRecord[] {
       records.push({
         codigo_estacao: station.codigo_estacao,
         nome_estacao: station.nome_estacao,
-        data: dateStr(date.getFullYear(), date.getMonth() + 1, date.getDate()),
-        ano: date.getFullYear(),
-        mes: date.getMonth() + 1,
-        dia: date.getDate(),
+        data: dateStr(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()),
+        ano: date.getUTCFullYear(),
+        mes: date.getUTCMonth() + 1,
+        dia: date.getUTCDate(),
         municipio: station.municipio,
         mesorregiao: station.mesorregiao,
         precipitacao_mm: rain > 0 ? rain : null,
-        periodo_clima: (date.getMonth() + 1) >= 3 && (date.getMonth() + 1) <= 8 ? "Chuvoso" : "Seco",
+        periodo_clima: (date.getUTCMonth() + 1) >= 3 && (date.getUTCMonth() + 1) <= 8 ? "Chuvoso" : "Seco",
         alerta_chuva: alerta,
       });
     }
@@ -253,7 +260,7 @@ function generateSeasonalComparison(): SeasonalComparison[] {
     "Metropolitana de Recife", "Zona da Mata", "Agreste",
     "Sertão do São Francisco", "Sertão"
   ];
-  const currentMonth = new Date().getMonth() + 1;
+  const currentMonth = getRecifeDateParts().month;
 
   for (const meso of mesorregioes) {
     for (let mes = 1; mes <= 12; mes++) {
@@ -299,12 +306,12 @@ export const mockSeasonalComparison: SeasonalComparison[] = generateSeasonalComp
 // ---- Forecast (7 days) ----
 function generateForecast(): ForecastDay[] {
   const days: ForecastDay[] = [];
-  const now = new Date();
+  const now = getRecifeBaseUtcDate();
 
   for (const mun of mockMunicipalities.slice(0, 3)) {
     for (let d = 0; d < 7; d++) {
       const date = new Date(now);
-      date.setDate(date.getDate() + d);
+      date.setUTCDate(date.getUTCDate() + d);
       const dayRain = d < 2 ? 30 + random() * 50 : d < 4 ? 10 + random() * 30 : random() * 15;
 
       const horas: ForecastHour[] = [];
@@ -319,7 +326,7 @@ function generateForecast(): ForecastDay[] {
         maxHourRain = Math.max(maxHourRain, hourRain);
 
         horas.push({
-          datetime: isoDateTime(date.getFullYear(), date.getMonth() + 1, date.getDate(), h),
+          datetime: isoDateTime(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), h),
           precipitacao_mm: hourRain,
           probabilidade_chuva: Math.min(100, Math.round(hourRain * 8 + random() * 20)),
           temperatura_c: Math.round((24 + Math.sin(h / 24 * Math.PI) * 6) * 10) / 10,
@@ -336,7 +343,7 @@ function generateForecast(): ForecastDay[] {
         : "normal" as const;
 
       days.push({
-        data: dateStr(date.getFullYear(), date.getMonth() + 1, date.getDate()),
+        data: dateStr(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()),
         municipio: mun.slug,
         precipitacao_total_mm: totalRounded,
         precipitacao_max_hora_mm: Math.round(maxHourRain * 10) / 10,
