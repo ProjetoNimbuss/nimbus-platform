@@ -32,7 +32,6 @@ export const metadata: Metadata = {
   ],
 };
 
-import AtmosphereWrapper from "@/components/ui/AtmosphereWrapper";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 export default function RootLayout({
@@ -49,8 +48,8 @@ export default function RootLayout({
       <body suppressHydrationWarning className="min-h-full flex flex-col gradient-bg relative">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <a 
@@ -59,7 +58,6 @@ export default function RootLayout({
           >
             Pular para o conteúdo principal
           </a>
-          <AtmosphereWrapper />
           <Header />
           <main id="main-content" className="flex-1 z-10 relative" tabIndex={-1}>{children}</main>
           <Footer />

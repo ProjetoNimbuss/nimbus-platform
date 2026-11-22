@@ -34,22 +34,54 @@ export function formatPct(pct: number | null, decimals = 1): string {
   return `${sign}${formatNumber(pct, decimals)}%`;
 }
 
+/** Get current calendar date in America/Recife (UTC-3) consistently across server & client */
+export function getRecifeDateParts(date: Date = new Date()): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Recife",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  return {
+    year: Number(parts.find((p) => p.type === "year")?.value ?? 2026),
+    month: Number(parts.find((p) => p.type === "month")?.value ?? 1),
+    day: Number(parts.find((p) => p.type === "day")?.value ?? 1),
+  };
+}
+
+/** Parse YYYY-MM-DD (or ISO date) as a pure calendar date without timezone shift */
+function parseCalendarDate(dateStr: string): { year: number; month: number; day: number; utcMs: number; dayOfWeek: number } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const utcDate = new Date(Date.UTC(year, month - 1, day));
+    return { year, month, day, utcMs: utcDate.getTime(), dayOfWeek: utcDate.getUTCDay() };
+  }
+  const { year, month, day } = getRecifeDateParts(new Date(dateStr));
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  return { year, month, day, utcMs: utcDate.getTime(), dayOfWeek: utcDate.getUTCDay() };
+}
+
 /** Format a date string to PT-BR short format */
 export function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
+  const { year, month, day } = parseCalendarDate(dateStr);
+  return `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`;
 }
 
 /** Format a date to relative day (Hoje, Amanhã, day name) */
 export function formatRelativeDay(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const target = parseCalendarDate(dateStr);
+  const todayParts = getRecifeDateParts();
+  const todayUtcMs = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day);
+  const diffDays = Math.round((target.utcMs - todayUtcMs) / (1000 * 60 * 60 * 24));
+
   if (diffDays === 0) return "Hoje";
   if (diffDays === 1) return "Amanhã";
   if (diffDays === -1) return "Ontem";
-  if (diffDays > 1 && diffDays < 7) return DAY_ABBR[d.getDay()];
+  if (diffDays > 1 && diffDays < 7) return DAY_ABBR[target.dayOfWeek];
   return formatDate(dateStr);
 }
 
