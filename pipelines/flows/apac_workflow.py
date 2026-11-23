@@ -31,7 +31,7 @@ def apac_flow(
         ano_fim=ano_fim,
         forcar_atualizacao=forcar_atualizacao,
     )
-    
+
     # Execução Subsequente da Silver APAC (se salvou novos dados)
     if total > 0:
         task_run_dataform(tags=["apac", "silver"])

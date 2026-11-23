@@ -36,7 +36,7 @@ def upload_dataframe_to_bigquery(df: pd.DataFrame, table_name: str, write_dispos
     """Carrega um DataFrame pandas diretamente no BigQuery via LoadJob oficial."""
     table_id = f"{PROJECT_ID}.{DATASET_SILVER}.{table_name}"
     job_config = bigquery.LoadJobConfig(write_disposition=write_disposition)
-    
+
     print(f"  Enviando {len(df)} registros para {table_id}...")
     job = bq_client.load_table_from_dataframe(df, table_id, job_config=job_config)
     job.result()  # Aguarda a conclusão
@@ -52,7 +52,7 @@ def load_reindesc_desastres():
 
     content = blob.download_as_bytes().decode("utf-8-sig", errors="ignore")
     df = pd.read_csv(io.StringIO(content), sep=";")
-    
+
     col_map = {
         "ID ocorrência": "id_ocorrencia",
         "Data": "data_ocorrencia",
@@ -67,7 +67,7 @@ def load_reindesc_desastres():
     }
     cols_existentes = [c for c in col_map.keys() if c in df.columns]
     df = df[cols_existentes].rename(columns=col_map)
-    
+
     if "id_ocorrencia" in df.columns:
         df["id_ocorrencia"] = pd.to_numeric(df["id_ocorrencia"], errors="coerce")
     if "data_ocorrencia" in df.columns:
@@ -120,37 +120,37 @@ def load_censo_consolidado():
             }
         )
     }
-    
+
     df_consolidado = None
     for chave, (arq_nome, col_renomear) in arquivos.items():
         blob = bucket.blob(arq_nome)
         if not blob.exists():
             print(f"  [AVISO] {arq_nome} não encontrado, pulando...")
             continue
-            
+
         print(f"  Processando {arq_nome}...")
         conteudo = blob.download_as_bytes().decode("latin1", errors="ignore")
         df_temp = pd.read_csv(io.StringIO(conteudo), sep=";", low_memory=False)
-        
+
         # Filtra estritamente Pernambuco (código 26)
         df_pe = df_temp[df_temp["CD_BAIRRO"].astype(str).str.startswith("26")].copy()
         df_pe["CD_BAIRRO"] = pd.to_numeric(df_pe["CD_BAIRRO"], errors="coerce").astype("Int64")
-        
+
         cols_interesse = ["CD_BAIRRO", "NM_BAIRRO"] + list(col_renomear.keys())
         cols_existentes = [c for c in cols_interesse if c in df_pe.columns]
         df_pe = df_pe[cols_existentes].rename(columns=col_renomear)
-        
+
         # Converte métricas para numéricas
         for nova_col in col_renomear.values():
             if nova_col in df_pe.columns:
                 df_pe[nova_col] = pd.to_numeric(df_pe[nova_col], errors="coerce")
-        
+
         if df_consolidado is None:
             df_consolidado = df_pe
         else:
             cols_join = [c for c in df_pe.columns if c not in ["NM_BAIRRO"]]
             df_consolidado = df_consolidado.merge(df_pe[cols_join], on="CD_BAIRRO", how="left")
-            
+
     if df_consolidado is not None and not df_consolidado.empty:
         df_consolidado.rename(columns={"CD_BAIRRO": "codigo_bairro", "NM_BAIRRO": "nome_bairro"}, inplace=True)
         if "nome_bairro" in df_consolidado.columns:
@@ -175,7 +175,7 @@ def load_geo_bairros():
             conn
         )
         conn.close()
-        
+
     df.rename(columns={
         "CD_BAIRRO": "codigo_bairro",
         "NM_BAIRRO": "nome_bairro",
@@ -183,13 +183,13 @@ def load_geo_bairros():
         "NM_MUN": "nome_municipio",
         "AREA_KM2": "area_km2"
     }, inplace=True)
-    
+
     df["codigo_bairro"] = pd.to_numeric(df["codigo_bairro"], errors="coerce").astype("Int64")
     df["codigo_municipio"] = pd.to_numeric(df["codigo_municipio"], errors="coerce").astype("Int64")
     df["area_km2"] = pd.to_numeric(df["area_km2"], errors="coerce")
     df["nome_bairro"] = df["nome_bairro"].astype(str).str.strip().str.upper()
     df["nome_municipio"] = df["nome_municipio"].astype(str).str.strip().str.upper()
-    
+
     upload_dataframe_to_bigquery(df, "silver_geo_bairros_pe")
 
 

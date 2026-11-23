@@ -12,7 +12,7 @@ def cemaden_flow():
     # 1. Ingestão Bronze (GCS)
     df = task_fetch_cemaden()
     gcs_path = task_save_cemaden(df)
-    
+
     # 2. Execução Subsequente da Silver (apenas a tabela do CEMADEN)
     if gcs_path:
         task_run_dataform(tags=["cemaden", "silver"])

@@ -3,7 +3,6 @@ Task Prefect para execução dos modelos SQLX no BigQuery via Dataform CLI.
 """
 
 import subprocess
-import os
 from pathlib import Path
 from prefect import task
 
@@ -13,13 +12,13 @@ def get_dataform_dir() -> str:
     container_dir = Path("/app/dataform")
     if container_dir.exists():
         return str(container_dir)
-    
+
     # Caminho relativo ao projeto local
     current_dir = Path(__file__).resolve().parent.parent.parent.parent
     local_dir = current_dir / "dataform"
     if local_dir.exists():
         return str(local_dir)
-        
+
     return "dataform"
 
 
