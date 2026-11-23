@@ -24,6 +24,7 @@ from pipelines.extract.extract_open_meteo_marine_hourly import (
     fetch_marine_hourly,
     save_to_gcs as save_marine_hourly,
 )
+from pipelines.flows.tasks.dataform_task import task_run_dataform
 
 
 @task(name="ingest-weather-current", retries=3, retry_delay_seconds=30)
@@ -68,6 +69,7 @@ def open_meteo_weather_flow():
     task_weather_current()
     task_weather_daily()
     task_weather_hourly()
+    task_run_dataform(tags=["open_meteo", "silver"])
 
 
 @flow(name="open-meteo-marine-flow", log_prints=True)
@@ -76,6 +78,7 @@ def open_meteo_marine_flow():
     task_marine_current()
     task_marine_daily()
     task_marine_hourly()
+    task_run_dataform(tags=["marine", "silver"])
 
 
 @flow(name="open-meteo-full-flow", log_prints=True)
@@ -84,7 +87,7 @@ def open_meteo_flow():
     print("Iniciando ingestão Open-Meteo...")
     open_meteo_weather_flow()
     open_meteo_marine_flow()
-    print("Ingestão Open-Meteo concluída com sucesso no GCS.")
+    print("Ingestão e transformação Open-Meteo concluídas com sucesso.")
 
 
 if __name__ == "__main__":
