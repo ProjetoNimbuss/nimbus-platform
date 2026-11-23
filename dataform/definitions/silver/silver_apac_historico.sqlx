@@ -1,0 +1,70 @@
+config {
+  type: "table",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "apac", "historico"],
+  bigquery: {
+    partitionBy: "data_medicao",
+    clusterBy: ["codigo_posto", "posto_nome"]
+  },
+  description: "Série histórica da APAC (1961 até hoje) transformada de colunas de dias em grão diário relacional."
+}
+
+WITH bronze_unpivot AS (
+  SELECT
+    SAFE_CAST(codigo AS INT64) AS codigo_posto,
+    TRIM(posto) AS posto_nome,
+    TRIM(mes_ano) AS mes_ano_str,
+    SAFE_CAST(mesorregiao_id AS INT64) AS mesorregiao_id,
+    SAFE_CAST(ano_ref AS INT64) AS ano_ref,
+    dia_str,
+    chuva_valor
+  FROM ${ref("apac_historico")}
+  UNPIVOT (
+    chuva_valor FOR dia_str IN (
+      dia_01, dia_02, dia_03, dia_04, dia_05, dia_06, dia_07, dia_08, dia_09, dia_10,
+      dia_11, dia_12, dia_13, dia_14, dia_15, dia_16, dia_17, dia_18, dia_19, dia_20,
+      dia_21, dia_22, dia_23, dia_24, dia_25, dia_26, dia_27, dia_28, dia_29, dia_30, dia_31
+    )
+  )
+),
+
+com_data AS (
+  SELECT
+    codigo_posto,
+    posto_nome,
+    mesorregiao_id,
+    ano_ref,
+    SAFE.PARSE_DATE(
+      '%d/%m/%Y',
+      CONCAT(
+        SUBSTR(dia_str, 5, 2), '/',
+        CASE LOWER(SUBSTR(mes_ano_str, 1, 3))
+          WHEN 'jan' THEN '01' WHEN 'fev' THEN '02' WHEN 'mar' THEN '03'
+          WHEN 'abr' THEN '04' WHEN 'mai' THEN '05' WHEN 'jun' THEN '06'
+          WHEN 'jul' THEN '07' WHEN 'ago' THEN '08' WHEN 'set' THEN '09'
+          WHEN 'out' THEN '10' WHEN 'nov' THEN '11' WHEN 'dez' THEN '12'
+          ELSE '01'
+        END, '/',
+        CAST(ano_ref AS STRING)
+      )
+    ) AS data_medicao,
+    CASE
+      WHEN SAFE_CAST(chuva_valor AS FLOAT64) >= 0 THEN SAFE_CAST(chuva_valor AS FLOAT64)
+      ELSE NULL
+    END AS chuva_mm
+  FROM bronze_unpivot
+)
+
+SELECT
+  data_medicao,
+  codigo_posto,
+  posto_nome,
+  mesorregiao_id,
+  ano_ref,
+  chuva_mm
+FROM com_data
+WHERE data_medicao IS NOT NULL
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY codigo_posto, data_medicao 
+  ORDER BY ano_ref DESC
+) = 1

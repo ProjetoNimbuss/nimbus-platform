@@ -1,16 +1,31 @@
 FROM python:3.11-slim
-# Instala o Google Chrome para o Selenium (Scraping APAC)
+
+# 1. Instala o Google Chrome para o Selenium (Scraping APAC) e utilitários
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg2 \
     unzip \
+    curl \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google.gpg \
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list' \
     && apt-get update && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
+
+# 2. Instala Node.js (v20) e Dataform CLI globalmente
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g @dataform/cli \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-# Copia e instala as dependências Python
+
+# 3. Copia e instala as dependências Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Copia os arquivos do projeto para o container
+
+# 4. Copia package.json do Dataform e instala dependências (@dataform/core)
+COPY dataform/package.json ./dataform/
+RUN cd dataform && npm install
+
+# 5. Copia os arquivos do projeto para o container
 COPY . .

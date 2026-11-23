@@ -1,0 +1,39 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "open_meteo", "weather"],
+  uniqueKey: ["cidade", "data_hora"],
+  bigquery: {
+    partitionBy: "DATE(data_hora)",
+    clusterBy: ["cidade"]
+  },
+  description: "Condições meteorológicas terrestres atuais por município monitorado."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(timestamp AS TIMESTAMP) AS data_hora,
+    UPPER(TRIM(cidade)) AS cidade,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    SAFE_CAST(temperature_2m AS FLOAT64) AS temperatura_c,
+    SAFE_CAST(apparent_temperature AS FLOAT64) AS sensacao_termica_c,
+    SAFE_CAST(relative_humidity_2m AS FLOAT64) AS umidade_relativa_pct,
+    CASE 
+      WHEN SAFE_CAST(precipitation AS FLOAT64) >= 0 THEN SAFE_CAST(precipitation AS FLOAT64)
+      ELSE NULL 
+    END AS precipitacao_mm,
+    SAFE_CAST(wind_speed_10m AS FLOAT64) AS vento_velocidade_kmh,
+    SAFE_CAST(wind_direction_10m AS INT64) AS vento_direcao_graus,
+    SAFE_CAST(weather_code AS INT64) AS condicao_tempo_codigo
+  FROM ${ref("open_meteo_weather_current")}
+  WHERE timestamp IS NOT NULL 
+    AND cidade IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY cidade, data_hora 
+  ORDER BY data_hora DESC
+) = 1

@@ -1,0 +1,39 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "open_meteo", "previsao"],
+  uniqueKey: ["cidade", "data_extracao", "data_hora_previsao"],
+  bigquery: {
+    partitionBy: "data_extracao",
+    clusterBy: ["cidade"]
+  },
+  description: "Previsão meteorológica horária de 7 dias com probabilidade de precipitação."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_extracao AS DATE) AS data_extracao,
+    SAFE_CAST(time AS TIMESTAMP) AS data_hora_previsao,
+    UPPER(TRIM(cidade)) AS cidade,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    SAFE_CAST(temperature_2m AS FLOAT64) AS temperatura_c,
+    SAFE_CAST(relative_humidity_2m AS FLOAT64) AS umidade_relativa_pct,
+    SAFE_CAST(precipitation_probability AS INT64) AS probabilidade_chuva_pct,
+    CASE 
+      WHEN SAFE_CAST(precipitation AS FLOAT64) >= 0 THEN SAFE_CAST(precipitation AS FLOAT64)
+      ELSE 0.0 
+    END AS precipitacao_prevista_mm,
+    SAFE_CAST(cloud_cover AS INT64) AS cobertura_nuvens_pct,
+    SAFE_CAST(wind_speed_10m AS FLOAT64) AS vento_velocidade_kmh
+  FROM ${ref("open_meteo_weather_hourly")}
+  WHERE time IS NOT NULL 
+    AND cidade IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY cidade, data_extracao, data_hora_previsao 
+  ORDER BY data_extracao DESC
+) = 1

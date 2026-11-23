@@ -1,0 +1,35 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "marine", "previsao"],
+  uniqueKey: ["ponto", "data_extracao", "data_previsao"],
+  bigquery: {
+    partitionBy: "data_extracao",
+    clusterBy: ["ponto"]
+  },
+  description: "Resumo diário de condições marítimas (altura máxima de ondas e direção dominante)."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_extracao AS DATE) AS data_extracao,
+    SAFE_CAST(time AS DATE) AS data_previsao,
+    TRIM(ponto) AS ponto,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    SAFE_CAST(wave_height_max AS FLOAT64) AS onda_altura_max_m,
+    SAFE_CAST(wave_direction_dominant AS INT64) AS onda_direcao_dominante_graus,
+    SAFE_CAST(wave_period_max AS FLOAT64) AS onda_periodo_max_s,
+    SAFE_CAST(swell_wave_height_max AS FLOAT64) AS swell_altura_max_m,
+    SAFE_CAST(swell_wave_direction_dominant AS INT64) AS swell_direcao_dominante_graus,
+    SAFE_CAST(swell_wave_period_max AS FLOAT64) AS swell_periodo_max_s
+  FROM ${ref("open_meteo_marine_daily")}
+  WHERE time IS NOT NULL AND ponto IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY ponto, data_extracao, data_previsao 
+  ORDER BY data_extracao DESC
+) = 1

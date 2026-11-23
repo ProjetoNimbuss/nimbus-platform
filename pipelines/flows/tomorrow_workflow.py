@@ -1,5 +1,6 @@
 from prefect import flow, task
 from pipelines.extract.extract_tomorrow_io import fetch_tomorrow_forecast, save_to_gcs
+from pipelines.flows.tasks.dataform_task import task_run_dataform
 
 task_fetch_tomorrow = task(
     fetch_tomorrow_forecast,
@@ -16,6 +17,11 @@ def tomorrow_flow():
     print("Iniciando fluxo de ingestão Tomorrow.io...")
     df = task_fetch_tomorrow()
     path = task_save_tomorrow(df)
+
+    # Execução Subsequente da Silver Tomorrow.io
+    if path:
+        task_run_dataform(tags=["tomorrow_io", "silver"])
+
     print(f"Fluxo Tomorrow.io concluído. Destino: {path}")
     return path
 

@@ -1,6 +1,7 @@
 from typing import Optional
 from prefect import flow, task
 from pipelines.extract.extract_apac import run_apac_scraper
+from pipelines.flows.tasks.dataform_task import task_run_dataform
 
 task_scrape_apac = task(
     run_apac_scraper,
@@ -30,6 +31,11 @@ def apac_flow(
         ano_fim=ano_fim,
         forcar_atualizacao=forcar_atualizacao,
     )
+
+    # Execução Subsequente da Silver APAC (se salvou novos dados)
+    if total > 0:
+        task_run_dataform(tags=["apac", "silver"])
+
     print(f"Fluxo APAC finalizado. Total de arquivos salvos: {total}.")
     return total
 
