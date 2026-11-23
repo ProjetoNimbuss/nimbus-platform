@@ -90,7 +90,24 @@ OPTIONS (
 );
 
 
-CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.tomorrow_hourly_forecast`
+CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.tomorrow_hourly_forecast` (
+  time STRING,
+  polo STRING,
+  cidade_base STRING,
+  latitude_consulta FLOAT64,
+  longitude_consulta FLOAT64,
+  origem_api STRING,
+  ingestion_timestamp_utc STRING,
+  rainIntensity FLOAT64,
+  precipitationProbability INT64,
+  temperature FLOAT64,
+  temperatureApparent FLOAT64,
+  windSpeed FLOAT64,
+  windDirection INT64,
+  humidity INT64,
+  visibility FLOAT64,
+  weatherCode INT64
+)
 WITH PARTITION COLUMNS (
   uf STRING,
   data_ingestao DATE
@@ -103,7 +120,19 @@ OPTIONS (
 );
 
 
-CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.apac_historico`
+CREATE OR REPLACE EXTERNAL TABLE `nimbus-506613.nimbus_bronze_prod.apac_historico` (
+  codigo INT64,
+  posto STRING,
+  mes_ano STRING,
+  mesorregiao_id INT64,
+  ano_ref INT64,
+  dia_01 STRING, dia_02 STRING, dia_03 STRING, dia_04 STRING, dia_05 STRING,
+  dia_06 STRING, dia_07 STRING, dia_08 STRING, dia_09 STRING, dia_10 STRING,
+  dia_11 STRING, dia_12 STRING, dia_13 STRING, dia_14 STRING, dia_15 STRING,
+  dia_16 STRING, dia_17 STRING, dia_18 STRING, dia_19 STRING, dia_20 STRING,
+  dia_21 STRING, dia_22 STRING, dia_23 STRING, dia_24 STRING, dia_25 STRING,
+  dia_26 STRING, dia_27 STRING, dia_28 STRING, dia_29 STRING, dia_30 STRING, dia_31 STRING
+)
 OPTIONS (
   format = 'PARQUET',
   uris = ['gs://nimbus-506613-bronze-apac/*.parquet'],

@@ -22,6 +22,21 @@ def get_dataform_dir() -> str:
     return "dataform"
 
 
+def ensure_df_credentials(df_dir: str) -> None:
+    """Garante que .df-credentials.json exista com ADC para o Dataform CLI."""
+    creds_file = Path(df_dir) / ".df-credentials.json"
+    if not creds_file.exists():
+        import json
+        import os
+        project_id = os.getenv("GCP_PROJECT_ID", "nimbus-506613")
+        creds_content = {
+            "projectId": project_id,
+            "location": "southamerica-east1",
+        }
+        creds_file.write_text(json.dumps(creds_content, indent=2))
+        print(f"[DATAFORM CLI] Criado {creds_file} com ADC para {project_id}.")
+
+
 @task(name="run-dataform-silver", retries=2, retry_delay_seconds=30)
 def task_run_dataform(tags: list[str] = None) -> str:
     """
@@ -29,6 +44,8 @@ def task_run_dataform(tags: list[str] = None) -> str:
     Permite filtrar por tags para rodar apenas os modelos pertinentes.
     """
     df_dir = get_dataform_dir()
+    ensure_df_credentials(df_dir)
+
     tag_arg = f"--tags {','.join(tags)}" if tags else ""
     cmd = f"dataform run {df_dir} {tag_arg}".strip()
 
