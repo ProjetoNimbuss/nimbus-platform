@@ -34,7 +34,7 @@ def apac_flow(
 
     # Execução Subsequente da Silver APAC (se salvou novos dados)
     if total > 0:
-        task_run_dataform(tags=["apac", "silver"])
+        task_run_dataform(tags=["apac"])
 
     print(f"Fluxo APAC finalizado. Total de arquivos salvos: {total}.")
     return total

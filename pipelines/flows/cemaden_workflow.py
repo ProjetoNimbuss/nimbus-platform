@@ -15,7 +15,7 @@ def cemaden_flow():
 
     # 2. Execução Subsequente da Silver (apenas a tabela do CEMADEN)
     if gcs_path:
-        task_run_dataform(tags=["cemaden", "silver"])
+        task_run_dataform(tags=["cemaden"])
 
 
 if __name__ == "__main__":
