@@ -18,15 +18,16 @@ WITH bronze_limpa AS (
     UPPER(TRIM(uf)) AS uf,
     SAFE_CAST(latitude AS FLOAT64) AS latitude,
     SAFE_CAST(longitude AS FLOAT64) AS longitude,
-    SAFE_CAST(temperature_2m AS FLOAT64) AS temperatura_c,
-    SAFE_CAST(relative_humidity_2m AS FLOAT64) AS umidade_relativa_pct,
-    SAFE_CAST(precipitation_probability AS INT64) AS probabilidade_chuva_pct,
+    COALESCE(SAFE_CAST(temperature_2m_ecmwf_ifs04 AS FLOAT64), SAFE_CAST(temperature_2m_gfs_seamless AS FLOAT64)) AS temperatura_c,
+    COALESCE(SAFE_CAST(relative_humidity_2m_ecmwf_ifs04 AS FLOAT64), SAFE_CAST(relative_humidity_2m_gfs_seamless AS FLOAT64)) AS umidade_relativa_pct,
+    COALESCE(SAFE_CAST(precipitation_probability_ecmwf_ifs04 AS INT64), SAFE_CAST(precipitation_probability_gfs_seamless AS INT64)) AS probabilidade_chuva_pct,
     CASE 
-      WHEN SAFE_CAST(precipitation AS FLOAT64) >= 0 THEN SAFE_CAST(precipitation AS FLOAT64)
+      WHEN COALESCE(SAFE_CAST(precipitation_ecmwf_ifs04 AS FLOAT64), SAFE_CAST(precipitation_gfs_seamless AS FLOAT64)) >= 0 
+      THEN COALESCE(SAFE_CAST(precipitation_ecmwf_ifs04 AS FLOAT64), SAFE_CAST(precipitation_gfs_seamless AS FLOAT64))
       ELSE 0.0 
     END AS precipitacao_prevista_mm,
-    SAFE_CAST(cloud_cover AS INT64) AS cobertura_nuvens_pct,
-    SAFE_CAST(wind_speed_10m AS FLOAT64) AS vento_velocidade_kmh
+    COALESCE(SAFE_CAST(cloud_cover_ecmwf_ifs04 AS INT64), SAFE_CAST(cloud_cover_gfs_seamless AS INT64)) AS cobertura_nuvens_pct,
+    COALESCE(SAFE_CAST(wind_speed_10m_ecmwf_ifs04 AS FLOAT64), SAFE_CAST(wind_speed_10m_gfs_seamless AS FLOAT64)) AS vento_velocidade_kmh
   FROM ${ref("open_meteo_weather_hourly")}
   WHERE time IS NOT NULL 
     AND cidade IS NOT NULL

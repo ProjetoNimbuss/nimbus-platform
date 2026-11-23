@@ -69,6 +69,16 @@ def fetch_tomorrow_forecast() -> pd.DataFrame:
 
     df_landing = pd.DataFrame(registros_raw)
     df_landing["data_ingestao"] = ts_ingestao.strftime("%Y-%m-%d")
+
+    # Padroniza métricas numéricas para evitar schema drift (int vs float) entre execuções
+    float_cols = [
+        "rainIntensity", "rainAccumulation", "temperature", "temperatureApparent",
+        "windSpeed", "windGust", "visibility", "latitude_consulta", "longitude_consulta"
+    ]
+    for c in float_cols:
+        if c in df_landing.columns:
+            df_landing[c] = pd.to_numeric(df_landing[c], errors="coerce").astype("float64")
+
     return df_landing
 
 

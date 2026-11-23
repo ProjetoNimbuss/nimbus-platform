@@ -3,7 +3,7 @@ config {
   schema: "nimbus_silver_prod",
   tags: ["silver", "apac", "historico"],
   bigquery: {
-    partitionBy: "data_medicao",
+    partitionBy: "DATE_TRUNC(data_medicao, MONTH)",
     clusterBy: ["codigo_posto", "posto_nome"]
   },
   description: "Série histórica da APAC (1961 até hoje) transformada de colunas de dias em grão diário relacional."
