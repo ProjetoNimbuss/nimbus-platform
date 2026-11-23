@@ -69,7 +69,7 @@ def open_meteo_weather_flow():
     task_weather_current()
     task_weather_daily()
     task_weather_hourly()
-    task_run_dataform(tags=["open_meteo", "silver"])
+    task_run_dataform(tags=["open_meteo"])
 
 
 @flow(name="open-meteo-marine-flow", log_prints=True)
@@ -78,7 +78,7 @@ def open_meteo_marine_flow():
     task_marine_current()
     task_marine_daily()
     task_marine_hourly()
-    task_run_dataform(tags=["marine", "silver"])
+    task_run_dataform(tags=["marine"])
 
 
 @flow(name="open-meteo-full-flow", log_prints=True)

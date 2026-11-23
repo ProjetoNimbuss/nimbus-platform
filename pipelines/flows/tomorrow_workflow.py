@@ -20,7 +20,7 @@ def tomorrow_flow():
 
     # Execução Subsequente da Silver Tomorrow.io
     if path:
-        task_run_dataform(tags=["tomorrow_io", "silver"])
+        task_run_dataform(tags=["tomorrow_io"])
 
     print(f"Fluxo Tomorrow.io concluído. Destino: {path}")
     return path
