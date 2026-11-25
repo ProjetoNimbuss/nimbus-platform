@@ -46,6 +46,23 @@ joined_forecast AS (
     END AS municipio_nome,
     om.data_hora_previsao,
     FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', om.data_hora_previsao, 'America/Recife') AS horario_recife,
+    CASE om.cidade
+      WHEN 'RECIFE' THEN 'Polo Central (Recife)'
+      WHEN 'OLINDA' THEN 'Polo Central (Recife)'
+      WHEN 'JABOATÃO DOS GUARARAPES' THEN 'Polo Central (Recife)'
+      WHEN 'PAULISTA' THEN 'Polo Norte (Paulista)'
+      WHEN 'ABREU E LIMA' THEN 'Polo Norte (Paulista)'
+      WHEN 'IGARASSU' THEN 'Polo Norte (Paulista)'
+      WHEN 'ITAPISSUMA' THEN 'Polo Norte (Paulista)'
+      WHEN 'ILHA DE ITAMARACÁ' THEN 'Polo Norte (Paulista)'
+      WHEN 'ARAÇOIABA' THEN 'Polo Norte (Paulista)'
+      WHEN 'CABO DE SANTO AGOSTINHO' THEN 'Polo Sul (Cabo)'
+      WHEN 'IPOJUCA' THEN 'Polo Sul (Cabo)'
+      WHEN 'SÃO LOURENÇO DA MATA' THEN 'Polo Oeste (São Lourenço)'
+      WHEN 'CAMARAGIBE' THEN 'Polo Oeste (São Lourenço)'
+      WHEN 'MORENO' THEN 'Polo Oeste (São Lourenço)'
+      ELSE NULL
+    END AS polo_sentinela_tomorrow,
 
     -- Chuva por Modelo (mm)
     ROUND(tom.precipitacao_intensidade_mmh, 1) AS precipitacao_tomorrow_mm,
@@ -85,7 +102,25 @@ joined_forecast AS (
     CURRENT_TIMESTAMP() AS atualizado_em
   FROM latest_open_meteo om
   LEFT JOIN latest_tomorrow tom
-    ON om.cidade = tom.cidade_base
+    ON (
+      CASE om.cidade
+        WHEN 'RECIFE' THEN 'RECIFE'
+        WHEN 'OLINDA' THEN 'RECIFE'
+        WHEN 'JABOATÃO DOS GUARARAPES' THEN 'RECIFE'
+        WHEN 'PAULISTA' THEN 'PAULISTA'
+        WHEN 'ABREU E LIMA' THEN 'PAULISTA'
+        WHEN 'IGARASSU' THEN 'PAULISTA'
+        WHEN 'ITAPISSUMA' THEN 'PAULISTA'
+        WHEN 'ILHA DE ITAMARACÁ' THEN 'PAULISTA'
+        WHEN 'ARAÇOIABA' THEN 'PAULISTA'
+        WHEN 'CABO DE SANTO AGOSTINHO' THEN 'CABO DE SANTO AGOSTINHO'
+        WHEN 'IPOJUCA' THEN 'CABO DE SANTO AGOSTINHO'
+        WHEN 'SÃO LOURENÇO DA MATA' THEN 'SÃO LOURENÇO DA MATA'
+        WHEN 'CAMARAGIBE' THEN 'SÃO LOURENÇO DA MATA'
+        WHEN 'MORENO' THEN 'SÃO LOURENÇO DA MATA'
+        ELSE om.cidade
+      END
+    ) = tom.cidade_base
     AND om.data_hora_previsao = tom.data_hora_previsao
 )
 
