@@ -1,0 +1,91 @@
+config {
+  type: "table",
+  schema: "nimbus_gold_prod",
+  tags: ["gold", "tempo_real", "cemaden"],
+  description: "Situação atual observada em tempo real por estação pluviométrica do CEMADEN em PE com 7 temporalidades e faixas INMET/OMM."
+}
+
+WITH leituras_recentes AS (
+  SELECT
+    codigo_estacao,
+    nome_estacao,
+    cidade AS municipio,
+    uf,
+    latitude,
+    longitude,
+    tipo_estacao,
+    chuva_mm,
+    data_hora
+  FROM ${ref("silver_cemaden_telemetria")}
+  WHERE data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 72 HOUR)
+),
+
+agregados_estacao AS (
+  SELECT
+    codigo_estacao,
+    MAX(nome_estacao) AS nome_estacao,
+    MAX(municipio) AS municipio,
+    MAX(uf) AS uf,
+    MAX(latitude) AS latitude,
+    MAX(longitude) AS longitude,
+    MAX(tipo_estacao) AS tipo_estacao,
+    'CEMADEN' AS origem_dado,
+
+    -- 7 Temporalidades de Chuva Observada (mm)
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR), chuva_mm, 0)), 0), 1) AS chuva_1h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), chuva_mm, 0)), 0), 1) AS chuva_3h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 6 HOUR), chuva_mm, 0)), 0), 1) AS chuva_6h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 12 HOUR), chuva_mm, 0)), 0), 1) AS chuva_12h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR), chuva_mm, 0)), 0), 1) AS chuva_24h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR), chuva_mm, 0)), 0), 1) AS chuva_48h_mm,
+    ROUND(COALESCE(SUM(IF(data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 72 HOUR), chuva_mm, 0)), 0), 1) AS chuva_72h_mm,
+
+    MAX(data_hora) AS ultima_leitura_timestamp
+  FROM leituras_recentes
+  GROUP BY codigo_estacao
+),
+
+classificacao AS (
+  SELECT
+    codigo_estacao,
+    nome_estacao,
+    municipio,
+    REPLACE(LOWER(REGEXP_REPLACE(NORMALIZE(municipio, NFD), r'\pM', '')), ' ', '-') AS municipio_slug,
+    uf,
+    latitude,
+    longitude,
+    ST_GEOGPOINT(longitude, latitude) AS ponto_geografico,
+    tipo_estacao,
+    origem_dado,
+    chuva_1h_mm,
+    chuva_3h_mm,
+    chuva_6h_mm,
+    chuva_12h_mm,
+    chuva_24h_mm,
+    chuva_48h_mm,
+    chuva_72h_mm,
+
+    -- Tendência: compara última 1h com ritmo anterior das 3 horas
+    CASE
+      WHEN chuva_1h_mm > ((chuva_3h_mm - chuva_1h_mm) / 2.0) * 1.3 AND chuva_1h_mm >= 1.0 THEN 'subindo'
+      WHEN chuva_1h_mm < ((chuva_3h_mm - chuva_1h_mm) / 2.0) * 0.7 OR (chuva_1h_mm = 0 AND chuva_3h_mm > 0) THEN 'descendo'
+      ELSE 'estavel'
+    END AS tendencia,
+
+    -- Faixa de Intensidade de Chuva (Padrão INMET/OMM)
+    CASE
+      WHEN chuva_1h_mm >= 50.0 OR chuva_24h_mm >= 100.0 THEN 'Muito Forte / Torrencial'
+      WHEN chuva_1h_mm >= 20.0 OR chuva_24h_mm >= 50.0 THEN 'Forte'
+      WHEN chuva_1h_mm >= 5.0 OR chuva_24h_mm >= 20.0 THEN 'Moderada'
+      WHEN chuva_1h_mm > 0.0 OR chuva_24h_mm > 0.0 THEN 'Fraca'
+      ELSE 'Sem Chuva'
+    END AS faixa_intensidade_chuva,
+
+    IF(ultima_leitura_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 HOUR), 'ativa', 'sem_transmissao_recente') AS status_operacional,
+    ultima_leitura_timestamp,
+    CURRENT_TIMESTAMP() AS atualizado_em
+  FROM agregados_estacao
+  WHERE municipio IS NOT NULL
+)
+
+SELECT * FROM classificacao

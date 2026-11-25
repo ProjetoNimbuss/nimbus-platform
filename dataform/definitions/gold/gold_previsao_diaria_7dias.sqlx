@@ -1,0 +1,101 @@
+config {
+  type: "table",
+  schema: "nimbus_gold_prod",
+  tags: ["gold", "previsao", "open_meteo"],
+  description: "Previsão meteorológica diária consolidada para os próximos 7 dias por município, comparando ECMWF e GFS com cálculo de consenso, temperaturas e nascer/pôr do sol."
+}
+
+WITH latest_daily AS (
+  SELECT *
+  FROM ${ref("silver_open_meteo_weather_daily")}
+  WHERE data_extracao = (
+    SELECT MAX(data_extracao) FROM ${ref("silver_open_meteo_weather_daily")}
+  )
+  AND data_previsao >= CURRENT_DATE('America/Recife')
+  AND data_previsao <= DATE_ADD(CURRENT_DATE('America/Recife'), INTERVAL 6 DAY)
+),
+
+joined_daily AS (
+  SELECT
+    cidade,
+    REPLACE(LOWER(REGEXP_REPLACE(NORMALIZE(cidade, NFD), r'\pM', '')), ' ', '-') AS municipio_slug,
+    CASE cidade
+      WHEN 'RECIFE' THEN 'Recife'
+      WHEN 'OLINDA' THEN 'Olinda'
+      WHEN 'JABOATÃO DOS GUARARAPES' THEN 'Jaboatão dos Guararapes'
+      WHEN 'PAULISTA' THEN 'Paulista'
+      WHEN 'CABO DE SANTO AGOSTINHO' THEN 'Cabo de Santo Agostinho'
+      WHEN 'CAMARAGIBE' THEN 'Camaragibe'
+      WHEN 'SÃO LOURENÇO DA MATA' THEN 'São Lourenço da Mata'
+      WHEN 'IGARASSU' THEN 'Igarassu'
+      WHEN 'ABREU E LIMA' THEN 'Abreu e Lima'
+      WHEN 'MORENO' THEN 'Moreno'
+      WHEN 'IPOJUCA' THEN 'Ipojuca'
+      WHEN 'ITAPISSUMA' THEN 'Itapissuma'
+      WHEN 'ILHA DE ITAMARACÁ' THEN 'Ilha de Itamaracá'
+      WHEN 'ARAÇOIABA' THEN 'Araçoiaba'
+      ELSE INITCAP(cidade)
+    END AS municipio_nome,
+    data_previsao,
+    CASE EXTRACT(DAYOFWEEK FROM data_previsao)
+      WHEN 1 THEN 'Domingo'
+      WHEN 2 THEN 'Segunda-feira'
+      WHEN 3 THEN 'Terça-feira'
+      WHEN 4 THEN 'Quarta-feira'
+      WHEN 5 THEN 'Quinta-feira'
+      WHEN 6 THEN 'Sexta-feira'
+      WHEN 7 THEN 'Sábado'
+    END AS dia_semana,
+
+    -- Precipitação Total Prevista por Modelo (mm)
+    ROUND(precipitacao_total_ecmwf_mm, 1) AS precipitacao_total_ecmwf_mm,
+    ROUND(precipitacao_total_gfs_mm, 1) AS precipitacao_total_gfs_mm,
+
+    -- Consenso Homogêneo de Chuva Diária (Média ECMWF + GFS)
+    ROUND(
+      (COALESCE(precipitacao_total_ecmwf_mm, 0.0) + COALESCE(precipitacao_total_gfs_mm, 0.0)) / 2.0, 
+      1
+    ) AS precipitacao_total_consenso_mm,
+
+    -- Divergência e Convergência entre Modelos
+    ROUND(ABS(COALESCE(precipitacao_total_ecmwf_mm, 0.0) - COALESCE(precipitacao_total_gfs_mm, 0.0)), 1) AS divergencia_modelos_mm,
+    CASE
+      WHEN ABS(COALESCE(precipitacao_total_ecmwf_mm, 0.0) - COALESCE(precipitacao_total_gfs_mm, 0.0)) <= 5.0 THEN 'Alta'
+      WHEN ABS(COALESCE(precipitacao_total_ecmwf_mm, 0.0) - COALESCE(precipitacao_total_gfs_mm, 0.0)) <= 20.0 THEN 'Moderada'
+      ELSE 'Divergente / Incerteza Alta'
+    END AS convergencia_modelos,
+
+    -- Temperaturas por Modelo (°C)
+    ROUND(temperatura_min_ecmwf_c, 1) AS temperatura_min_ecmwf_c,
+    ROUND(temperatura_max_ecmwf_c, 1) AS temperatura_max_ecmwf_c,
+    ROUND(temperatura_min_gfs_c, 1) AS temperatura_min_gfs_c,
+    ROUND(temperatura_max_gfs_c, 1) AS temperatura_max_gfs_c,
+
+    -- Temperaturas Consenso (°C)
+    ROUND((COALESCE(temperatura_min_ecmwf_c, temperatura_min_gfs_c) + COALESCE(temperatura_min_gfs_c, temperatura_min_ecmwf_c)) / 2.0, 1) AS temperatura_min_consenso_c,
+    ROUND((COALESCE(temperatura_max_ecmwf_c, temperatura_max_gfs_c) + COALESCE(temperatura_max_gfs_c, temperatura_max_ecmwf_c)) / 2.0, 1) AS temperatura_max_consenso_c,
+
+    -- Probabilidade de Chuva Máxima no Dia (%)
+    probabilidade_chuva_max_ecmwf_pct,
+    probabilidade_chuva_max_gfs_pct,
+    CAST(ROUND((COALESCE(probabilidade_chuva_max_ecmwf_pct, probabilidade_chuva_max_gfs_pct) + COALESCE(probabilidade_chuva_max_gfs_pct, probabilidade_chuva_max_ecmwf_pct)) / 2.0) AS INT64) AS probabilidade_chuva_max_consenso_pct,
+
+    -- Vento Máximo (km/h)
+    ROUND(COALESCE(vento_max_ecmwf_kmh, vento_max_gfs_kmh), 1) AS vento_max_kmh,
+
+    -- Código WMO meteorológico
+    COALESCE(condicao_tempo_codigo_ecmwf, condicao_tempo_codigo_gfs) AS condicao_tempo_codigo,
+
+    -- Alerta Potencial Previsto (>= 50 mm de chuva no dia pelo consenso)
+    ((COALESCE(precipitacao_total_ecmwf_mm, 0.0) + COALESCE(precipitacao_total_gfs_mm, 0.0)) / 2.0) >= 50.0 AS alerta_potencial_previsto,
+
+    -- Horários Solares (Horário Local Recife)
+    FORMAT_TIMESTAMP('%H:%M', COALESCE(nascer_do_sol_ecmwf, nascer_do_sol_gfs), 'America/Recife') AS nascer_do_sol,
+    FORMAT_TIMESTAMP('%H:%M', COALESCE(por_do_sol_ecmwf, por_do_sol_gfs), 'America/Recife') AS por_do_sol,
+
+    CURRENT_TIMESTAMP() AS atualizado_em
+  FROM latest_daily
+)
+
+SELECT * FROM joined_daily
+ORDER BY municipio_nome, data_previsao

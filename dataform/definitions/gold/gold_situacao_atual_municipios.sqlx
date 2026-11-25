@@ -1,0 +1,102 @@
+config {
+  type: "table",
+  schema: "nimbus_gold_prod",
+  tags: ["gold", "tempo_real", "cemaden"],
+  description: "Consolidação territorial em tempo real por município da RMR a partir das estações do CEMADEN com 7 temporalidades e máximos operacionais."
+}
+
+WITH estacoes_rmr AS (
+  SELECT *
+  FROM ${ref("gold_situacao_atual_estacoes")}
+  WHERE municipio IN (
+    'RECIFE', 'OLINDA', 'JABOATÃO DOS GUARARAPES', 'PAULISTA', 
+    'CABO DE SANTO AGOSTINHO', 'CAMARAGIBE', 'SÃO LOURENÇO DA MATA', 
+    'IGARASSU', 'ABREU E LIMA', 'MORENO', 'IPOJUCA', 'ITAPISSUMA', 
+    'ILHA DE ITAMARACÁ', 'ARAÇOIABA'
+  )
+),
+
+agregados_municipais AS (
+  SELECT
+    municipio,
+    municipio_slug,
+    'CEMADEN' AS origem_dado,
+
+    -- Máximos territoriais observados (Segurança de vidas e Defesa Civil)
+    ROUND(MAX(chuva_1h_mm), 1) AS chuva_max_1h_mm,
+    ROUND(MAX(chuva_3h_mm), 1) AS chuva_max_3h_mm,
+    ROUND(MAX(chuva_6h_mm), 1) AS chuva_max_6h_mm,
+    ROUND(MAX(chuva_12h_mm), 1) AS chuva_max_12h_mm,
+    ROUND(MAX(chuva_24h_mm), 1) AS chuva_max_24h_mm,
+    ROUND(MAX(chuva_48h_mm), 1) AS chuva_max_48h_mm,
+    ROUND(MAX(chuva_72h_mm), 1) AS chuva_max_72h_mm,
+
+    -- Médias territoriais
+    ROUND(AVG(chuva_1h_mm), 1) AS chuva_media_1h_mm,
+    ROUND(AVG(chuva_24h_mm), 1) AS chuva_media_24h_mm,
+
+    -- Estações e Status
+    COUNT(DISTINCT codigo_estacao) AS total_estacoes,
+    COUNT(DISTINCT IF(status_operacional = 'ativa', codigo_estacao, NULL)) AS total_estacoes_ativas,
+    ARRAY_AGG(codigo_estacao ORDER BY codigo_estacao) AS estacoes_codigos,
+
+    -- Estação mais chuvosa (crítica) nas últimas 24h
+    ARRAY_AGG(nome_estacao ORDER BY chuva_24h_mm DESC, chuva_1h_mm DESC LIMIT 1)[OFFSET(0)] AS estacao_mais_chuvosa_nome,
+    ARRAY_AGG(tendencia ORDER BY chuva_24h_mm DESC, chuva_1h_mm DESC LIMIT 1)[OFFSET(0)] AS tendencia_predominante,
+
+    MAX(ultima_leitura_timestamp) AS ultima_leitura_timestamp
+  FROM estacoes_rmr
+  GROUP BY municipio, municipio_slug
+),
+
+classificacao_final AS (
+  SELECT
+    municipio_slug,
+    CASE municipio
+      WHEN 'RECIFE' THEN 'Recife'
+      WHEN 'OLINDA' THEN 'Olinda'
+      WHEN 'JABOATÃO DOS GUARARAPES' THEN 'Jaboatão dos Guararapes'
+      WHEN 'PAULISTA' THEN 'Paulista'
+      WHEN 'CABO DE SANTO AGOSTINHO' THEN 'Cabo de Santo Agostinho'
+      WHEN 'CAMARAGIBE' THEN 'Camaragibe'
+      WHEN 'SÃO LOURENÇO DA MATA' THEN 'São Lourenço da Mata'
+      WHEN 'IGARASSU' THEN 'Igarassu'
+      WHEN 'ABREU E LIMA' THEN 'Abreu e Lima'
+      WHEN 'MORENO' THEN 'Moreno'
+      WHEN 'IPOJUCA' THEN 'Ipojuca'
+      WHEN 'ITAPISSUMA' THEN 'Itapissuma'
+      WHEN 'ILHA DE ITAMARACÁ' THEN 'Ilha de Itamaracá'
+      WHEN 'ARAÇOIABA' THEN 'Araçoiaba'
+      ELSE INITCAP(municipio)
+    END AS municipio_nome,
+    origem_dado,
+    chuva_max_1h_mm,
+    chuva_max_3h_mm,
+    chuva_max_6h_mm,
+    chuva_max_12h_mm,
+    chuva_max_24h_mm,
+    chuva_max_48h_mm,
+    chuva_max_72h_mm,
+    chuva_media_1h_mm,
+    chuva_media_24h_mm,
+
+    -- Faixa de intensidade máxima registrada no território municipal
+    CASE
+      WHEN chuva_max_1h_mm >= 50.0 OR chuva_max_24h_mm >= 100.0 THEN 'Muito Forte / Torrencial'
+      WHEN chuva_max_1h_mm >= 20.0 OR chuva_max_24h_mm >= 50.0 THEN 'Forte'
+      WHEN chuva_max_1h_mm >= 5.0 OR chuva_max_24h_mm >= 20.0 THEN 'Moderada'
+      WHEN chuva_max_1h_mm > 0.0 OR chuva_max_24h_mm > 0.0 THEN 'Fraca'
+      ELSE 'Sem Chuva'
+    END AS faixa_intensidade_maxima,
+
+    tendencia_predominante,
+    total_estacoes,
+    total_estacoes_ativas,
+    estacoes_codigos,
+    estacao_mais_chuvosa_nome,
+    ultima_leitura_timestamp,
+    CURRENT_TIMESTAMP() AS atualizado_em
+  FROM agregados_municipais
+)
+
+SELECT * FROM classificacao_final
