@@ -93,3 +93,9 @@ A integração nativa permite que commits mesclados na branch `main` sejam sincr
 3. **Sincronização & Execução:**
    - Após o merge na `main`, o Dataform no GCP compila as alterações automaticamente.
    - O **Prefect** (rodando na VM) aciona a execução do Dataform no BigQuery após o término de cada ciclo de ingestão.
+
+---
+
+> 📖 **Documentação de Engenharia & Modelagem Analítica:**  
+> Para detalhes completos dos modelos das camadas **Bronze, Silver e Gold** (regras de negócio, métricas, deduplicação e dependências), consulte:  
+> 👉 [**`docs/arquitetura-e-dados.md`**](../docs/arquitetura-e-dados.md)
