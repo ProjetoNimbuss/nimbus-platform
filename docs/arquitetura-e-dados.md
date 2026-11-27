@@ -66,7 +66,7 @@ A plataforma adota o padrão de **Arquitetura Medalhão (Bronze ➔ Silver ➔ G
 ```mermaid
 flowchart TD
     subgraph SOURCELAYER ["🌐 Fontes de Dados Externas"]
-        src_cemaden["CEMADEN API<br/>(Telemetria a cada 15m)"]
+        src_cemaden["CEMADEN API<br/>(Telemetria Horária)"]
         src_openmeteo["Open-Meteo Weather API<br/>(ECMWF + GFS Horário/Diário)"]
         src_marine["Open-Meteo Marine API<br/>(9 Pontos Costeiros)"]
         src_tomorrow["Tomorrow.io API<br/>(Nowcasting 4 Pólos)"]
@@ -79,6 +79,7 @@ flowchart TD
         flow_openmeteo["open_meteo_workflow.py"]
         flow_tomorrow["tomorrow_workflow.py"]
         flow_apac["apac_workflow.py"]
+        flow_gold["gold_workflow.py<br/>(Tempo Real 1h / Previsão 6h)"]
         flow_geo["load_silver_geo.py"]
     end
 
@@ -162,11 +163,11 @@ A infraestrutura opera de forma híbrida:
 
 | Fonte | Tipo de Extração | Frequência | Granularidade | Descrição / Cobertura |
 | :--- | :--- | :--- | :--- | :--- |
-| **CEMADEN** | API REST JSON | A cada 15 min | Por estação física | 284 estações pluviométricas telemétricas em PE (14 municípios da RMR monitorados). |
+| **CEMADEN** | API REST JSON | A cada 1 hora | Por estação física | 284 estações pluviométricas telemétricas em PE (14 municípios da RMR monitorados). |
 | **Open-Meteo Weather** | API REST JSON | A cada 1 hora | Por município (14) | Previsão horária de 7 dias e diária dos modelos ECMWF IFS 0.4° e GFS Seamless NOAA. |
 | **Open-Meteo Marine** | API REST JSON | A cada 1 hora | Por ponto costeiro (9) | Ondas, swell (ondulação), período, correntes e marés para o litoral da RMR. |
 | **Tomorrow.io** | API REST JSON | A cada 1 hora | 4 Pólos Sentinela | Nowcasting de alta resolução (12 horas à frente) cobrindo os 4 quadrantes da RMR. |
-| **APAC PE** | Web Scraping Headless | Diário (madrugada) | Por posto pluviométrico | Histórico diário desde 1961 para todos os postos oficiais de Pernambuco. |
+| **APAC PE** | Web Scraping Headless | Diário (06:00) | Por posto pluviométrico | Histórico diário desde 1961 para todos os postos oficiais de Pernambuco. |
 | **IBGE Censo 2022** | Carga CSV Estática | Carga Única | Por Bairro Oficial | Indicadores de população, alfabetização, renda, esgotamento e vulnerabilidade. |
 | **IBGE Geometrias** | Arquivo GeoPackage (GPKG) | Carga Única | Polígonos Geográficos | Limites territoriais dos 705 bairros e 185 municípios de Pernambuco (EPSG:4326). |
 
@@ -181,28 +182,34 @@ A orquestração não utiliza cronjobs de sistema operacional diretamente. Todos
 
 ```text
 Prefect Server (Deployments)
- ├── cemaden-ingestion-flow/cemaden-api-deployment    (Intervalo: a cada 15 min)
- ├── open-meteo-full-flow/open-meteo-api-deployment   (Intervalo: a cada 1 hora)
- ├── tomorrow-io-ingestion-flow/tomorrow-api-deploy   (Intervalo: a cada 1 hora)
- └── apac-ingestion-flow/apac-scrape-deployment       (Cron: diário às 03:00 UTC)
+ ├── cemaden-ingestion-flow/cemaden-ingestion-hourly (Intervalo: a cada 1 hora no min :00)
+ ├── open-meteo-full-flow/open-meteo-hourly          (Intervalo: a cada 1 hora no min :00)
+ ├── tomorrow-io-ingestion-flow/tomorrow-io-hourly    (Intervalo: a cada 1 hora no min :00)
+ ├── apac-ingestion-flow/apac-scraping-daily          (Cron: diário às 06:00)
+ ├── gold-tempo-real-flow/gold-tempo-real-hourly      (Intervalo: a cada 1 hora no min :10)
+ └── gold-previsao-flow/gold-previsao-6h              (Cron: a cada 6h às 00:15, 06:15, 12:15, 18:15)
 ```
 
 1. **`cemaden_workflow.py`:**
    * Executa `task_fetch_cemaden()`: consulta a API pública do CEMADEN para o estado de Pernambuco.
-   * Executa `task_save_cemaden()`: salva arquivos Parquet em `gs://nimbus-506613-bronze-cemaden/cemaden/uf=PE/ano=YYYY/mes=MM/dia=DD/`.
-   * Dispara a transformação via Dataform: `task_run_dataform(tags=["cemaden"])`.
+   * Executa `task_save_cemaden()`: salva arquivos Parquet em `gs://nimbus-506613-bronze-cemaden/ano=YYYY/mes=MM/dia=DD/`.
+   * Dispara a transformação Silver incremental: `task_run_dataform(tags=["cemaden"])`.
 2. **`open_meteo_workflow.py`:**
    * Executa 6 tarefas de extração paralela: clima atual, previsão diária, previsão horária, marés atuais, marés diárias e marés horárias.
    * Salva os Parquets nos respectivos buckets de clima e costeiro.
-   * Dispara as transformações via Dataform: `task_run_dataform(tags=["open_meteo"])` e `task_run_dataform(tags=["marine"])`.
+   * Dispara as transformações Silver incrementais: `task_run_dataform(tags=["open_meteo"])` e `task_run_dataform(tags=["marine"])`.
 3. **`tomorrow_workflow.py`:**
    * Requisita o endpoint `/v4/weather/forecast` da Tomorrow.io para as coordenadas geográficas dos 4 Pólos Sentinela da RMR.
    * Salva em `gs://nimbus-506613-bronze-tomorrow-api/hourly_forecast/`.
-   * Dispara a transformação via Dataform: `task_run_dataform(tags=["tomorrow_io"])`.
+   * Dispara a transformação Silver incremental: `task_run_dataform(tags=["tomorrow_io"])`.
 4. **`apac_workflow.py`:**
    * Executa o crawler com Selenium (Chrome Headless) no portal da APAC, raspando a matriz mensal de chuvas para as 5 mesorregiões de PE.
-   * Salva em `gs://nimbus-506613-bronze-apac/chuva/`.
-   * Dispara a transformação via Dataform: `task_run_dataform(tags=["apac"])`.
+   * Salva em `gs://nimbus-506613-bronze-apac/ano=YYYY/`.
+   * Dispara a transformação Silver incremental: `task_run_dataform(tags=["apac"])`.
+5. **`gold_workflow.py`:**
+   * Orquestra a camada analítica Gold de forma desacoplada:
+     * `gold_tempo_real_flow`: Consolida situação atual por estação e município a cada 1 hora (`tags=["gold", "tempo_real"]`).
+     * `gold_previsao_flow`: Consolida previsão numérica 48h e 7d a cada 6 horas (`tags=["gold", "previsao"]`).
 
 ### 2.3 Resiliência, Retries e Isolamento por Tags
 * **Políticas de Retry:** Todas as tarefas de extração externa têm retries automáticos (`retries=3, retry_delay_seconds=30`) para resistir a instabilidades transitórias de rede ou timeouts de APIs terceiras.
@@ -216,7 +223,7 @@ Prefect Server (Deployments)
 
 | Bucket GCS | Prefixo de Armazenamento | Particionamento Hive | Frequência |
 | :--- | :--- | :--- | :--- |
-| `gs://nimbus-506613-bronze-cemaden` | `cemaden/uf=PE/` | `ano={ano}/mes={mes}/dia={dia}` | 15 min |
+| `gs://nimbus-506613-bronze-cemaden` | `ano={ano}/mes={mes}/dia={dia}/` | `ano={ano}/mes={mes}/dia={dia}` | 1 hora |
 | `gs://nimbus-506613-bronze-open-meteo-weather` | `current/uf=PE/` | `ano={ano}/mes={mes}/dia={dia}` | 1 hora |
 | `gs://nimbus-506613-bronze-open-meteo-weather` | `forecast_hourly/uf=PE/` | `data_extracao={data_extracao}` | 1 hora |
 | `gs://nimbus-506613-bronze-open-meteo-weather` | `forecast_daily/uf=PE/` | `data_extracao={data_extracao}` | 1 hora |
@@ -224,7 +231,7 @@ Prefect Server (Deployments)
 | `gs://nimbus-506613-bronze-open-meteo-marine` | `forecast_hourly/uf=PE/` | `data_extracao={data_extracao}` | 1 hora |
 | `gs://nimbus-506613-bronze-open-meteo-marine` | `forecast_daily/uf=PE/` | `data_extracao={data_extracao}` | 1 hora |
 | `gs://nimbus-506613-bronze-tomorrow-api` | `hourly_forecast/` | `data_extracao={data_extracao}` | 1 hora |
-| `gs://nimbus-506613-bronze-apac` | `chuva/` | `data_extracao={data_extracao}` | Diário |
+| `gs://nimbus-506613-bronze-apac` | `ano={ano}/` | `ano={ano}` | Diário |
 | `gs://nimbus-506613-geo-complementares` | `censo/` e `geometrias/` | Sem partição temporal | Estático |
 
 ### 3.2 Catálogo de Tabelas Externas do BigQuery (`nimbus_bronze_prod`)
@@ -241,15 +248,16 @@ WITH PARTITION COLUMNS (
 )
 OPTIONS (
     format = 'PARQUET',
-    hive_partition_uri_prefix = 'gs://nimbus-506613-bronze-cemaden/cemaden/uf=PE',
-    uris = ['gs://nimbus-506613-bronze-cemaden/cemaden/uf=PE/*']
+    hive_partition_uri_prefix = 'gs://nimbus-506613-bronze-cemaden',
+    uris = ['gs://nimbus-506613-bronze-cemaden/*']
 );
 ```
 
 ### 3.3 Padronização e Migração do Scraper APAC
 O BigQuery impõe validações estritas de cabeçalho em arquivos Parquet (caracteres acentuados, espaços e barras são rejeitados). No extrator [`pipelines/extract/extract_apac.py`](file:///home/igortiburcio/Projetos/nimbus-platform/pipelines/extract/extract_apac.py):
 1. Foi criada a função `padronizar_colunas_apac()`, renomeando as colunas matriciais de dias (`01` a `31`) para `dia_01` a `dia_31`, e cabeçalhos como `Mês/Ano` para `mes_ano` e `Código` para `codigo`.
-2. Todos os mais de 300 arquivos Parquet históricos no bucket `gs://nimbus-506613-bronze-apac/` foram migrados com os novos cabeçalhos padronizados.
+2. O particionamento no GCS foi padronizado em `ano={ano}/{nome_meso}.parquet`, viabilizando o Hive Partitioning nativo no BigQuery para evitar a leitura de arquivos de anos históricos anteriores.
+3. Foi criado o utilitário [`pipelines/storage/migrate_apac_partitions.py`](file:///home/igortiburcio/Projetos/nimbus-platform/pipelines/storage/migrate_apac_partitions.py) para mover arquivos legados com suporte a `--dry-run`.
 
 ---
 
@@ -257,6 +265,7 @@ O BigQuery impõe validações estritas de cabeçalho em arquivos Parquet (carac
 
 ### 5.1 Governança Analítica e Padrões SQLX
 Todos os modelos em `dataform/definitions/silver/` operam sob rigorosos padrões:
+* **Processamento Incremental Obrigatório (`when(incremental())`):** Todos os 9 modelos da camada Silver utilizam a macro `${when(incremental(), ...)}` para filtrar estritamente a janela temporal recente (timestamp de ingestão ou data de partição). Isso garante que o BigQuery escaneie menos de 3 GB/dia no total da camada, mantendo o consumo em menos de 10% do Free Tier.
 * **Deduplicação Determinística:** Aplicação de `QUALIFY ROW_NUMBER() OVER (PARTITION BY <chave_primaria> ORDER BY data_extracao DESC) = 1` para manter apenas o dado mais recente em caso de reprocessamento.
 * **Tipagem Defensiva:** Uso sistemático de `SAFE_CAST(...)` para prevenir falhas de compilação por dados nulos ou strings malformadas das APIs públicas.
 * **Particionamento e Clustering Nativos:** Redução de custos e alta velocidade em consultas analíticas:
