@@ -1,0 +1,20 @@
+groups:
+  - name: nimbus-alertas-hidrometeo
+    rules:
+      - alert: FalhaPrefectWorkerDown
+        expr: up{job="cadvisor"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Contêiner crítico inativo"
+          description: "O monitoramento indica que um dos contêineres vitais do Nimbus parou de responder há mais de 2 minutos."
+
+      - alert: IngestaoGcsAtrasada
+        expr: time() - nimbus_ultima_ingestao_timestamp > 3600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ingestão de dados atrasada"
+          description: "Nenhum novo dado foi gravado no bucket Bronze na última hora para a fonte especificada."

@@ -1,0 +1,38 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "<fonte>", "<entidade>"],
+  uniqueKey: ["codigo_estacao", "data_hora"],
+  bigquery: {
+    partitionBy: "DATE(data_hora)",
+    clusterBy: ["cidade", "codigo_estacao"]
+  },
+  assertions: {
+    nonNull: ["codigo_estacao", "data_hora"],
+    uniqueKey: ["codigo_estacao", "data_hora"]
+  },
+  description: "<Descrição da entidade> normalizada e deduplicada."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_hora AS TIMESTAMP) AS data_hora,
+    TRIM(codigo_estacao) AS codigo_estacao,
+    UPPER(TRIM(cidade)) AS cidade,
+    CASE
+      WHEN SAFE_CAST(chuva_mm AS FLOAT64) >= 0 THEN SAFE_CAST(chuva_mm AS FLOAT64)
+      ELSE NULL
+    END AS chuva_mm,
+    SAFE_CAST(ingestao_ts AS TIMESTAMP) AS ingestao_ts
+  FROM ${ref("<fonte>_<entidade>")}
+  WHERE data_hora IS NOT NULL
+    AND codigo_estacao IS NOT NULL
+  ${when(incremental(), `AND SAFE_CAST(ingestao_ts AS TIMESTAMP) > (SELECT MAX(ingestao_ts) FROM ${self()})`)}
+)
+
+SELECT *
+FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY codigo_estacao, data_hora
+  ORDER BY ingestao_ts DESC
+) = 1

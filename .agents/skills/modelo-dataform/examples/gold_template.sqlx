@@ -1,0 +1,24 @@
+config {
+  type: "table",
+  tags: ["gold", "<dominio>"],
+  description: "<Visão de negócio consumida pela API em /api/v1/...>"
+}
+
+WITH ultima_leitura AS (
+  SELECT
+    codigo_estacao,
+    cidade,
+    chuva_mm,
+    data_hora
+  FROM ${ref("silver_<fonte>_<entidade>")}
+  WHERE data_hora >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY codigo_estacao ORDER BY data_hora DESC) = 1
+)
+
+SELECT
+  cidade AS municipio,
+  COUNT(DISTINCT codigo_estacao) AS qtd_estacoes,
+  ROUND(MAX(chuva_mm), 2) AS chuva_max_mm,
+  MAX(data_hora) AS atualizado_em
+FROM ultima_leitura
+GROUP BY cidade
