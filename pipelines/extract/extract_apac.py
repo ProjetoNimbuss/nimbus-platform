@@ -334,7 +334,7 @@ def run_apac_scraper(
             scraper.selecionar_mesorregiao(cod_id)
 
             for ano in range(ano_inicio, ano_fim + 1):
-                gcs_path = f"gs://{BUCKETS['apac']}/{nome_meso}_{ano}.parquet"
+                gcs_path = f"gs://{BUCKETS['apac']}/ano={ano}/{nome_meso}.parquet"
 
                 # Anos historicos (anteriores ao ano atual) sao imutaveis:
                 # se ja existirem e nao for forcada a atualizacao, pula.

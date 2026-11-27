@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: "nimbus_gold_prod",
-  tags: ["gold", "tempo_real", "cemaden"],
+  tags: ["gold", "tempo_real"],
   description: "Consolidação territorial em tempo real por município da RMR a partir das estações do CEMADEN com 7 temporalidades e máximos operacionais."
 }
 

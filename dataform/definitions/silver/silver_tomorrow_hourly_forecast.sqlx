@@ -32,6 +32,7 @@ WITH bronze_limpa AS (
   FROM ${ref("tomorrow_hourly_forecast")}
   WHERE time IS NOT NULL 
     AND polo IS NOT NULL
+  ${when(incremental(), `AND SAFE_CAST(data_ingestao AS DATE) >= (SELECT MAX(data_ingestao) FROM ${self()})`)}
 )
 
 SELECT * FROM bronze_limpa

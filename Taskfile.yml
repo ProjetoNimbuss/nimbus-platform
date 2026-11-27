@@ -148,6 +148,16 @@ tasks:
     cmds:
       - docker-compose exec prefect-worker python pipelines/flows/apac_workflow.py
 
+  flow:gold:tempo_real:
+    desc: Executa a consolidação das tabelas Gold em tempo real no BigQuery
+    cmds:
+      - docker-compose exec prefect-worker python -c "from pipelines.flows.gold_workflow import gold_tempo_real_flow; gold_tempo_real_flow()"
+
+  flow:gold:previsao:
+    desc: Executa a consolidação das tabelas Gold de previsão climática no BigQuery
+    cmds:
+      - docker-compose exec prefect-worker python -c "from pipelines.flows.gold_workflow import gold_previsao_flow; gold_previsao_flow()"
+
   # BACKEND & BANCO DE DADOS
   migrate:
     desc: Executa as migrations do banco de dados relacional no Laravel

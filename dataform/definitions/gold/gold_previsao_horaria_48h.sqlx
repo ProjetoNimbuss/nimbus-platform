@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: "nimbus_gold_prod",
-  tags: ["gold", "previsao", "open_meteo", "tomorrow_io"],
+  tags: ["gold", "previsao"],
   description: "Previsão meteorológica horária consolidada para as próximas 48 horas comparando ECMWF, GFS e Tomorrow.io com cálculo de consenso e divergência."
 }
 

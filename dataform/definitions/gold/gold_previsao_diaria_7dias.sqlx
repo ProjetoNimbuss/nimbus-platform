@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: "nimbus_gold_prod",
-  tags: ["gold", "previsao", "open_meteo"],
+  tags: ["gold", "previsao"],
   description: "Previsão meteorológica diária consolidada para os próximos 7 dias por município, comparando ECMWF e GFS com cálculo de consenso, temperaturas e nascer/pôr do sol."
 }
 

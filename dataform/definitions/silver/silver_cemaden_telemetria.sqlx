@@ -28,6 +28,7 @@ WITH bronze_limpa AS (
   FROM ${ref("cemaden_telemetria")}
   WHERE data_hora IS NOT NULL
     AND codigo_gmmc IS NOT NULL
+  ${when(incremental(), `AND SAFE_CAST(ingestao_ts AS TIMESTAMP) > (SELECT MAX(ingestao_ts) FROM ${self()})`)}
 )
 
 SELECT

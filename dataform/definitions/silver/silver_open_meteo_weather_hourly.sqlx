@@ -46,6 +46,7 @@ WITH bronze_limpa AS (
   FROM ${ref("open_meteo_weather_hourly")}
   WHERE time IS NOT NULL 
     AND cidade IS NOT NULL
+  ${when(incremental(), `AND SAFE_CAST(data_extracao AS DATE) >= (SELECT MAX(data_extracao) FROM ${self()})`)}
 )
 
 SELECT * FROM bronze_limpa
