@@ -141,12 +141,17 @@ task
 | `task migrate` | Executa as migrations do PostgreSQL dentro do container da API. |
 | `task seed` | Alimenta o banco PostgreSQL com dados fictícios para desenvolvimento (`db:seed`). |
 
-### Workflow e DBT
+### Pipelines de Dados & Orquestração (Prefect & Dataform)
 
 | Comando | Descrição |
 | :--- | :--- |
-| `task dbt-run` | Executa os modelos dbt das camadas Silver e Gold no DuckDB. |
-| `task dbt-test` | Executa as suítes de testes de integridade de dados no dbt. |
+| `task flow:deploy` | Registra todos os fluxos como deployments agendados no Prefect Server. |
+| `task flow:cemaden` | Executa o fluxo de ingestão do CEMADEN e transformação Silver. |
+| `task flow:tomorrow` | Executa o fluxo de ingestão Tomorrow.io e transformação Silver. |
+| `task flow:openmeteo` | Executa o fluxo de ingestão Open-Meteo (terrestre e marinho) e Silvers. |
+| `task flow:apac` | Executa o fluxo de ingestão APAC (Scraping com Chrome headless) e Silver. |
+| `task flow:gold:tempo_real` | Executa a consolidação das tabelas Gold em tempo real no BigQuery. |
+| `task flow:gold:previsao` | Executa a consolidação das tabelas Gold de previsão climática no BigQuery. |
 
 ### Lint
 
