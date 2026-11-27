@@ -1,13 +1,7 @@
-import sys
-from pathlib import Path
 from typing import Optional
 
-# Garante a raiz do projeto no PYTHONPATH
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
 from prefect import flow, task
+
 from pipelines.extract.extract_apac import run_apac_scraper
 from pipelines.flows.tasks.dataform_task import task_run_dataform
 
