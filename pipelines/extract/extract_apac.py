@@ -19,7 +19,10 @@ try:
 except ImportError:
     from config.settings import BASE_URL, BUCKETS
 
-fs = gcsfs.GCSFileSystem()
+
+def get_gcs_fs():
+    """Inicializa o GCSFileSystem sob demanda."""
+    return gcsfs.GCSFileSystem()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,18 +40,75 @@ MESORREGIOES = {
     2601: "Sertao_Pernambucano",
 }
 
-# Colunas obrigatórias que a tabela de deve conter
+# Colunas obrigatórias que a tabela deve conter
 COLUNAS_ESPERADAS = ["Código", "Posto", "Mês/Ano"]
+
+
+def padronizar_colunas_apac(colunas):
+    """
+    Padroniza os nomes das colunas da APAC para conformidade estrita com o BigQuery:
+    - Dias do mês ('01', '1', etc.) tornam-se 'dia_01', 'dia_02', etc.
+    - Caracteres especiais e acentos são substituídos (ex: 'Mês/Ano' -> 'mes_ano', 'Código' -> 'codigo').
+    - Nomes ficam em minúsculas e usando apenas letras, números e underscores.
+    """
+    mapa_especifico = {
+        "código": "codigo",
+        "posto": "posto",
+        "mês/ano": "mes_ano",
+        "mes/ano": "mes_ano",
+        "município": "municipio",
+        "municipio": "municipio",
+        "média": "media",
+        "media": "media",
+        "total": "total",
+    }
+    novas_colunas = []
+    for col in colunas:
+        c_str = str(col).strip()
+        if c_str.isdigit():
+            novas_colunas.append(f"dia_{int(c_str):02d}")
+        else:
+            c_lower = c_str.lower()
+            if c_lower in mapa_especifico:
+                novas_colunas.append(mapa_especifico[c_lower])
+            else:
+                c_clean = (
+                    c_lower
+                    .replace("/", "_")
+                    .replace(" ", "_")
+                    .replace("-", "_")
+                    .replace("ç", "c")
+                    .replace("ã", "a")
+                    .replace("á", "a")
+                    .replace("à", "a")
+                    .replace("é", "e")
+                    .replace("ê", "e")
+                    .replace("í", "i")
+                    .replace("ó", "o")
+                    .replace("ô", "o")
+                    .replace("ú", "u")
+                )
+                c_clean = re.sub(r"[^a-z0-9_]", "", c_clean)
+                novas_colunas.append(c_clean)
+    return novas_colunas
 
 
 class ScraperAPAC:
     def __init__(self, headless: bool = False):
         options = webdriver.ChromeOptions()
         if headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--window-size=1920,1080")
+
+        # Impede o Chrome moderno de forçar upgrade automático para HTTPS (porta 443 fechada na APAC)
+        prefs = {
+            "profile.default_content_setting_values.automatic_https": 2,
+            "https_only_mode_enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
 
         self.driver = webdriver.Chrome(options=options)
         self.wait = WebDriverWait(self.driver, 20)
@@ -260,6 +320,7 @@ def run_apac_scraper(
         ano_inicio = ano_atual
 
     scraper = ScraperAPAC(headless=True)
+    fs = get_gcs_fs()
     total_salvos = 0
 
     try:
@@ -299,6 +360,7 @@ def run_apac_scraper(
                     if not df.empty:
                         df["mesorregiao_id"] = cod_id
                         df["ano_ref"] = ano
+                        df.columns = padronizar_colunas_apac(df.columns)
                         df.to_parquet(gcs_path, index=False)
                         log.info(f"  [OK] {ano}: {len(df)} registros salvos no GCS.")
                         total_salvos += 1

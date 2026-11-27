@@ -65,6 +65,7 @@ services:
       - GCP_PROJECT_ID=${GCP_PROJECT_ID}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-sa-key.json
       - TOMORROW_IO_API_KEY=${TOMORROW_IO_API_KEY}
+      - PYTHONPATH=/app
     depends_on:
       - prefect-server
     volumes:
