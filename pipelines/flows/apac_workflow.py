@@ -1,5 +1,7 @@
 from typing import Optional
+
 from prefect import flow, task
+
 from pipelines.extract.extract_apac import run_apac_scraper
 from pipelines.flows.tasks.dataform_task import task_run_dataform
 

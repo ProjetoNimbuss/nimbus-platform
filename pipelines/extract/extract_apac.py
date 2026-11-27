@@ -19,7 +19,10 @@ try:
 except ImportError:
     from config.settings import BASE_URL, BUCKETS
 
-fs = gcsfs.GCSFileSystem()
+
+def get_gcs_fs():
+    """Inicializa o GCSFileSystem sob demanda."""
+    return gcsfs.GCSFileSystem()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +40,7 @@ MESORREGIOES = {
     2601: "Sertao_Pernambucano",
 }
 
-# Colunas obrigatórias que a tabela de deve conter
+# Colunas obrigatórias que a tabela deve conter
 COLUNAS_ESPERADAS = ["Código", "Posto", "Mês/Ano"]
 
 
@@ -94,10 +97,18 @@ class ScraperAPAC:
     def __init__(self, headless: bool = False):
         options = webdriver.ChromeOptions()
         if headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--window-size=1920,1080")
+
+        # Impede o Chrome moderno de forçar upgrade automático para HTTPS (porta 443 fechada na APAC)
+        prefs = {
+            "profile.default_content_setting_values.automatic_https": 2,
+            "https_only_mode_enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
 
         self.driver = webdriver.Chrome(options=options)
         self.wait = WebDriverWait(self.driver, 20)
@@ -309,6 +320,7 @@ def run_apac_scraper(
         ano_inicio = ano_atual
 
     scraper = ScraperAPAC(headless=True)
+    fs = get_gcs_fs()
     total_salvos = 0
 
     try:

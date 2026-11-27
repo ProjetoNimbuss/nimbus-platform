@@ -19,6 +19,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 # 3. Copia e instala as dependências Python
 COPY requirements.txt .
