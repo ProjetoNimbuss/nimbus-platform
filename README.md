@@ -162,7 +162,7 @@ O projeto utiliza o **[Taskfile (`go-task`)](https://taskfile.dev)** para automa
 
 ### 1. Pré-requisitos
 * **Docker** e **Docker Compose** instalados
-* **Taskfile (`go-task`)** instalado ([guia de instalação](docs/documentacao_taskfile_e_provisionamento.md))
+* **Taskfile (`go-task`)** instalado ([guia de instalação](docs/guia-taskfile.md))
 
 ### 2. Configurar o Ambiente
 Copie o modelo de variáveis de ambiente e preencha as chaves necessárias (GCP, APIs):
@@ -204,13 +204,14 @@ task migrate        # Executa as migrations do Laravel
 
 Para aprofundamento técnico, consulte os documentos detalhados na pasta [`docs/`](docs/):
 
-* [Plano Diretor e Arquitetura do Nimbus](docs/plano_diretor_arquitetura.md)
-* [Documentação da Arquitetura de Dados](docs/documentacao_arquitetura_dados.md)
-* [Guia de Ingestão e Camada Bronze](docs/Documentacao_Ingestao_bronze.md)
-* [Guia de Provisionamento e Uso do Taskfile](docs/documentacao_taskfile_e_provisionamento.md)
+* [Plano Diretor e Arquitetura da Plataforma](docs/plano-diretor.md)
+* [Engenharia e Arquitetura de Dados (Bronze, Silver e Gold)](docs/arquitetura-e-dados.md)
+* [Guia de Provisionamento e Uso do Taskfile](docs/guia-taskfile.md)
+* [Guia Prático de Docker](docs/guia-docker.md)
 * [Documentação dos Modelos Dataform](dataform/README.md)
 * [Contrato das Rotas da API](docs/api-contrato.md)
-* [Estratégia de Branches e Versionamento](docs/estrategia-de-branches.md)
+* [Estratégia de Branches e Versionamento](docs/estrategia-branches.md)
+* [Histórico e Documentos Arquivados](docs/legacy/README.md)
 
 ---
 

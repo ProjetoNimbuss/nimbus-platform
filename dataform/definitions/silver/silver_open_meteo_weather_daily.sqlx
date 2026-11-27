@@ -1,0 +1,53 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "open_meteo", "previsao"],
+  uniqueKey: ["cidade", "data_extracao", "data_previsao"],
+  bigquery: {
+    partitionBy: "data_extracao",
+    clusterBy: ["cidade"]
+  },
+  description: "Resumos diários previstos para 7 dias (temperaturas mín/máx, total de chuva e sol)."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_extracao AS DATE) AS data_extracao,
+    SAFE_CAST(time AS DATE) AS data_previsao,
+    UPPER(TRIM(cidade)) AS cidade,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    -- Modelo Europeu Diário (ECMWF IFS 0.4°)
+    SAFE_CAST(temperature_2m_max_ecmwf_ifs04 AS FLOAT64) AS temperatura_max_ecmwf_c,
+    SAFE_CAST(temperature_2m_min_ecmwf_ifs04 AS FLOAT64) AS temperatura_min_ecmwf_c,
+    SAFE_CAST(apparent_temperature_max_ecmwf_ifs04 AS FLOAT64) AS sensacao_max_ecmwf_c,
+    SAFE_CAST(apparent_temperature_min_ecmwf_ifs04 AS FLOAT64) AS sensacao_min_ecmwf_c,
+    SAFE_CAST(precipitation_sum_ecmwf_ifs04 AS FLOAT64) AS precipitacao_total_ecmwf_mm,
+    SAFE_CAST(precipitation_probability_max_ecmwf_ifs04 AS INT64) AS probabilidade_chuva_max_ecmwf_pct,
+    SAFE_CAST(wind_speed_10m_max_ecmwf_ifs04 AS FLOAT64) AS vento_max_ecmwf_kmh,
+    SAFE_CAST(weather_code_ecmwf_ifs04 AS INT64) AS condicao_tempo_codigo_ecmwf,
+    SAFE_CAST(sunrise_ecmwf_ifs04 AS TIMESTAMP) AS nascer_do_sol_ecmwf,
+    SAFE_CAST(sunset_ecmwf_ifs04 AS TIMESTAMP) AS por_do_sol_ecmwf,
+
+    -- Modelo Americano Diário (GFS Seamless / NOAA)
+    SAFE_CAST(temperature_2m_max_gfs_seamless AS FLOAT64) AS temperatura_max_gfs_c,
+    SAFE_CAST(temperature_2m_min_gfs_seamless AS FLOAT64) AS temperatura_min_gfs_c,
+    SAFE_CAST(apparent_temperature_max_gfs_seamless AS FLOAT64) AS sensacao_max_gfs_c,
+    SAFE_CAST(apparent_temperature_min_gfs_seamless AS FLOAT64) AS sensacao_min_gfs_c,
+    SAFE_CAST(precipitation_sum_gfs_seamless AS FLOAT64) AS precipitacao_total_gfs_mm,
+    SAFE_CAST(precipitation_probability_max_gfs_seamless AS INT64) AS probabilidade_chuva_max_gfs_pct,
+    SAFE_CAST(wind_speed_10m_max_gfs_seamless AS FLOAT64) AS vento_max_gfs_kmh,
+    SAFE_CAST(weather_code_gfs_seamless AS INT64) AS condicao_tempo_codigo_gfs,
+    SAFE_CAST(sunrise_gfs_seamless AS TIMESTAMP) AS nascer_do_sol_gfs,
+    SAFE_CAST(sunset_gfs_seamless AS TIMESTAMP) AS por_do_sol_gfs
+  FROM ${ref("open_meteo_weather_daily")}
+  WHERE time IS NOT NULL 
+    AND cidade IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY cidade, data_extracao, data_previsao 
+  ORDER BY data_extracao DESC
+) = 1

@@ -1,0 +1,41 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "marine", "previsao"],
+  uniqueKey: ["ponto", "data_extracao", "data_hora_previsao"],
+  bigquery: {
+    partitionBy: "data_extracao",
+    clusterBy: ["ponto"]
+  },
+  description: "Previsão horária de 5 dias das condições de ondas e maré por ponto costeiro."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_extracao AS DATE) AS data_extracao,
+    COALESCE(
+      SAFE_CAST(time AS TIMESTAMP),
+      SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M', time),
+      SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', time)
+    ) AS data_hora_previsao,
+    TRIM(ponto) AS ponto,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    SAFE_CAST(wave_height AS FLOAT64) AS onda_altura_m,
+    SAFE_CAST(wave_period AS FLOAT64) AS onda_periodo_s,
+    SAFE_CAST(wave_direction AS INT64) AS onda_direcao_graus,
+    SAFE_CAST(swell_wave_height AS FLOAT64) AS swell_altura_m,
+    SAFE_CAST(swell_wave_period AS FLOAT64) AS swell_periodo_s,
+    SAFE_CAST(swell_wave_direction AS INT64) AS swell_direcao_graus,
+    SAFE_CAST(ocean_current_velocity AS FLOAT64) AS corrente_velocidade_ms,
+    SAFE_CAST(ocean_current_direction AS INT64) AS corrente_direcao_graus
+  FROM ${ref("open_meteo_marine_hourly")}
+  WHERE time IS NOT NULL AND ponto IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY ponto, data_extracao, data_hora_previsao 
+  ORDER BY data_extracao DESC
+) = 1

@@ -16,7 +16,8 @@ export default function Header() {
   const navItems = isTechnical ? NAV_TECHNICAL : NAV_STANDARD;
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = mounted && resolvedTheme === "dark";
 
   useEffect(() => {
     setMounted(true);
@@ -71,11 +72,11 @@ export default function Header() {
 
             {/* Theme Toggle (Desktop) */}
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme(isDark ? "light" : "dark")}
               className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-alt)] transition-colors"
               aria-label="Alternar tema"
             >
-              {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             {/* Mode Toggle */}
@@ -141,10 +142,10 @@ export default function Header() {
           <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
             <span className="text-sm font-medium text-[var(--color-text-secondary)]">Modo Escuro</span>
             <button 
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme(isDark ? "light" : "dark")}
               className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-bg-surface-alt)] text-[var(--color-text-primary)]"
             >
-              {mounted && theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
           </div>
         </div>

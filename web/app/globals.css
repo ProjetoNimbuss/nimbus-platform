@@ -157,17 +157,27 @@ body {
 
 /* ---- Glassmorphism Card ---- */
 .glass-card {
-  background: rgba(18, 25, 41, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
   border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glass-card:hover {
   border-color: var(--color-border-light);
-  background: rgba(22, 28, 44, 0.85);
+  background: rgba(255, 255, 255, 0.96);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+.dark .glass-card {
+  background: rgba(18, 25, 41, 0.7);
+  box-shadow: none;
+}
+.dark .glass-card:hover {
+  border-color: var(--color-border-light);
+  background: rgba(22, 28, 44, 0.85);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -287,13 +297,17 @@ body {
 
 /* ---- Tooltip ---- */
 .tooltip-content {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 13px;
   color: var(--color-text-primary);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+.dark .tooltip-content {
+  background: rgba(15, 23, 42, 0.95);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -410,18 +424,18 @@ body {
 
 /* ---- Recharts overrides ---- */
 .recharts-cartesian-grid line {
-  stroke: rgba(148, 163, 184, 0.06) !important;
+  stroke: var(--color-border) !important;
 }
 .recharts-text {
-  fill: #475569 !important;
+  fill: var(--color-text-secondary) !important;
   font-size: 11px !important;
 }
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: #FFFFFF !important;
+  background: var(--color-bg-card) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  color: #000000 !important;
+  color: var(--color-text-primary) !important;
 }
 
 /* ---- KPI Card ---- */

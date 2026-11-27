@@ -107,3 +107,7 @@ transform/logs/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+
+# Dataform CLI
+.df-credentials.json
+dataform/.df-credentials.json

@@ -1,0 +1,41 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "tomorrow_io", "previsao"],
+  uniqueKey: ["polo", "data_ingestao", "data_hora_previsao"],
+  bigquery: {
+    partitionBy: "data_ingestao",
+    clusterBy: ["polo", "cidade_base"]
+  },
+  description: "Previsão nowcasting horária de 12 horas para os pólos sentinela da RMR."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_ingestao AS DATE) AS data_ingestao,
+    SAFE_CAST(time AS TIMESTAMP) AS data_hora_previsao,
+    TRIM(polo) AS polo,
+    UPPER(TRIM(cidade_base)) AS cidade_base,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude_consulta AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude_consulta AS FLOAT64) AS longitude,
+    SAFE_CAST(rainIntensity AS FLOAT64) AS precipitacao_intensidade_mmh,
+    SAFE_CAST(precipitationProbability AS INT64) AS probabilidade_chuva_pct,
+    SAFE_CAST(temperature AS FLOAT64) AS temperatura_c,
+    SAFE_CAST(temperatureApparent AS FLOAT64) AS sensacao_termica_c,
+    SAFE_CAST(windSpeed AS FLOAT64) AS vento_velocidade_ms,
+    SAFE_CAST(windDirection AS INT64) AS vento_direcao_graus,
+    SAFE_CAST(humidity AS FLOAT64) AS umidade_relativa_pct,
+    SAFE_CAST(visibility AS FLOAT64) AS visibilidade_km,
+    SAFE_CAST(weatherCode AS INT64) AS condicao_tempo_codigo,
+    SAFE_CAST(ingestion_timestamp_utc AS TIMESTAMP) AS ingestao_ts
+  FROM ${ref("tomorrow_hourly_forecast")}
+  WHERE time IS NOT NULL 
+    AND polo IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY polo, data_ingestao, data_hora_previsao 
+  ORDER BY ingestao_ts DESC
+) = 1

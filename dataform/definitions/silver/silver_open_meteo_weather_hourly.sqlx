@@ -1,0 +1,55 @@
+config {
+  type: "incremental",
+  schema: "nimbus_silver_prod",
+  tags: ["silver", "open_meteo", "previsao"],
+  uniqueKey: ["cidade", "data_extracao", "data_hora_previsao"],
+  bigquery: {
+    partitionBy: "data_extracao",
+    clusterBy: ["cidade"]
+  },
+  description: "Previsão meteorológica horária de 7 dias com probabilidade de precipitação."
+}
+
+WITH bronze_limpa AS (
+  SELECT
+    SAFE_CAST(data_extracao AS DATE) AS data_extracao,
+    COALESCE(
+      SAFE_CAST(time AS TIMESTAMP),
+      SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M', time),
+      SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', time)
+    ) AS data_hora_previsao,
+    UPPER(TRIM(cidade)) AS cidade,
+    UPPER(TRIM(uf)) AS uf,
+    SAFE_CAST(latitude AS FLOAT64) AS latitude,
+    SAFE_CAST(longitude AS FLOAT64) AS longitude,
+    -- Modelo Europeu (ECMWF IFS 0.4°)
+    SAFE_CAST(temperature_2m_ecmwf_ifs04 AS FLOAT64) AS temperatura_ecmwf_c,
+    SAFE_CAST(relative_humidity_2m_ecmwf_ifs04 AS FLOAT64) AS umidade_relativa_ecmwf_pct,
+    SAFE_CAST(precipitation_probability_ecmwf_ifs04 AS INT64) AS probabilidade_chuva_ecmwf_pct,
+    CASE 
+      WHEN SAFE_CAST(precipitation_ecmwf_ifs04 AS FLOAT64) >= 0 THEN SAFE_CAST(precipitation_ecmwf_ifs04 AS FLOAT64)
+      ELSE 0.0 
+    END AS precipitacao_ecmwf_mm,
+    SAFE_CAST(cloud_cover_ecmwf_ifs04 AS INT64) AS cobertura_nuvens_ecmwf_pct,
+    SAFE_CAST(wind_speed_10m_ecmwf_ifs04 AS FLOAT64) AS vento_velocidade_ecmwf_kmh,
+
+    -- Modelo Americano (GFS Seamless / NOAA)
+    SAFE_CAST(temperature_2m_gfs_seamless AS FLOAT64) AS temperatura_gfs_c,
+    SAFE_CAST(relative_humidity_2m_gfs_seamless AS FLOAT64) AS umidade_relativa_gfs_pct,
+    SAFE_CAST(precipitation_probability_gfs_seamless AS INT64) AS probabilidade_chuva_gfs_pct,
+    CASE 
+      WHEN SAFE_CAST(precipitation_gfs_seamless AS FLOAT64) >= 0 THEN SAFE_CAST(precipitation_gfs_seamless AS FLOAT64)
+      ELSE 0.0 
+    END AS precipitacao_gfs_mm,
+    SAFE_CAST(cloud_cover_gfs_seamless AS INT64) AS cobertura_nuvens_gfs_pct,
+    SAFE_CAST(wind_speed_10m_gfs_seamless AS FLOAT64) AS vento_velocidade_gfs_kmh
+  FROM ${ref("open_meteo_weather_hourly")}
+  WHERE time IS NOT NULL 
+    AND cidade IS NOT NULL
+)
+
+SELECT * FROM bronze_limpa
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY cidade, data_extracao, data_hora_previsao 
+  ORDER BY data_extracao DESC
+) = 1

@@ -91,7 +91,7 @@ export default function VigilPage() {
           delta="↑ 15% comparado ao mês anterior"
         />
       </div>
-      <VigilCharts data={chartData} />
+      <VigilCharts data={chartData} period={period} />
     </div>
   );
 }

@@ -1,0 +1,128 @@
+config {
+  type: "table",
+  schema: "nimbus_gold_prod",
+  tags: ["gold", "previsao", "open_meteo", "tomorrow_io"],
+  description: "Previsão meteorológica horária consolidada para as próximas 48 horas comparando ECMWF, GFS e Tomorrow.io com cálculo de consenso e divergência."
+}
+
+WITH latest_open_meteo AS (
+  SELECT *
+  FROM ${ref("silver_open_meteo_weather_hourly")}
+  WHERE data_extracao = (
+    SELECT MAX(data_extracao) FROM ${ref("silver_open_meteo_weather_hourly")}
+  )
+  AND data_hora_previsao >= CURRENT_TIMESTAMP()
+  AND data_hora_previsao <= TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
+),
+
+latest_tomorrow AS (
+  SELECT *
+  FROM ${ref("silver_tomorrow_hourly_forecast")}
+  WHERE data_ingestao = (
+    SELECT MAX(data_ingestao) FROM ${ref("silver_tomorrow_hourly_forecast")}
+  )
+),
+
+joined_forecast AS (
+  SELECT
+    om.cidade,
+    REPLACE(LOWER(REGEXP_REPLACE(NORMALIZE(om.cidade, NFD), r'\pM', '')), ' ', '-') AS municipio_slug,
+    CASE om.cidade
+      WHEN 'RECIFE' THEN 'Recife'
+      WHEN 'OLINDA' THEN 'Olinda'
+      WHEN 'JABOATÃO DOS GUARARAPES' THEN 'Jaboatão dos Guararapes'
+      WHEN 'PAULISTA' THEN 'Paulista'
+      WHEN 'CABO DE SANTO AGOSTINHO' THEN 'Cabo de Santo Agostinho'
+      WHEN 'CAMARAGIBE' THEN 'Camaragibe'
+      WHEN 'SÃO LOURENÇO DA MATA' THEN 'São Lourenço da Mata'
+      WHEN 'IGARASSU' THEN 'Igarassu'
+      WHEN 'ABREU E LIMA' THEN 'Abreu e Lima'
+      WHEN 'MORENO' THEN 'Moreno'
+      WHEN 'IPOJUCA' THEN 'Ipojuca'
+      WHEN 'ITAPISSUMA' THEN 'Itapissuma'
+      WHEN 'ILHA DE ITAMARACÁ' THEN 'Ilha de Itamaracá'
+      WHEN 'ARAÇOIABA' THEN 'Araçoiaba'
+      ELSE INITCAP(om.cidade)
+    END AS municipio_nome,
+    om.data_hora_previsao,
+    FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', om.data_hora_previsao, 'America/Recife') AS horario_recife,
+    CASE om.cidade
+      WHEN 'RECIFE' THEN 'Polo Central (Recife)'
+      WHEN 'OLINDA' THEN 'Polo Central (Recife)'
+      WHEN 'JABOATÃO DOS GUARARAPES' THEN 'Polo Central (Recife)'
+      WHEN 'PAULISTA' THEN 'Polo Norte (Paulista)'
+      WHEN 'ABREU E LIMA' THEN 'Polo Norte (Paulista)'
+      WHEN 'IGARASSU' THEN 'Polo Norte (Paulista)'
+      WHEN 'ITAPISSUMA' THEN 'Polo Norte (Paulista)'
+      WHEN 'ILHA DE ITAMARACÁ' THEN 'Polo Norte (Paulista)'
+      WHEN 'ARAÇOIABA' THEN 'Polo Norte (Paulista)'
+      WHEN 'CABO DE SANTO AGOSTINHO' THEN 'Polo Sul (Cabo)'
+      WHEN 'IPOJUCA' THEN 'Polo Sul (Cabo)'
+      WHEN 'SÃO LOURENÇO DA MATA' THEN 'Polo Oeste (São Lourenço)'
+      WHEN 'CAMARAGIBE' THEN 'Polo Oeste (São Lourenço)'
+      WHEN 'MORENO' THEN 'Polo Oeste (São Lourenço)'
+      ELSE NULL
+    END AS polo_sentinela_tomorrow,
+
+    -- Chuva por Modelo (mm)
+    ROUND(tom.precipitacao_intensidade_mmh, 1) AS precipitacao_tomorrow_mm,
+    ROUND(om.precipitacao_ecmwf_mm, 1) AS precipitacao_ecmwf_mm,
+    ROUND(om.precipitacao_gfs_mm, 1) AS precipitacao_gfs_mm,
+
+    -- Consenso Homogêneo de Chuva (Média entre ECMWF e GFS)
+    ROUND(
+      (COALESCE(om.precipitacao_ecmwf_mm, 0.0) + COALESCE(om.precipitacao_gfs_mm, 0.0)) / 2.0, 
+      1
+    ) AS precipitacao_consenso_mm,
+
+    -- Análise de Divergência entre os Modelos Globais
+    ROUND(ABS(COALESCE(om.precipitacao_ecmwf_mm, 0.0) - COALESCE(om.precipitacao_gfs_mm, 0.0)), 1) AS divergencia_modelos_mm,
+    CASE
+      WHEN ABS(COALESCE(om.precipitacao_ecmwf_mm, 0.0) - COALESCE(om.precipitacao_gfs_mm, 0.0)) <= 2.0 THEN 'Alta'
+      WHEN ABS(COALESCE(om.precipitacao_ecmwf_mm, 0.0) - COALESCE(om.precipitacao_gfs_mm, 0.0)) <= 10.0 THEN 'Moderada'
+      ELSE 'Divergente / Incerteza Alta'
+    END AS convergencia_modelos,
+
+    -- Temperatura para cada modelo (°C)
+    ROUND(tom.temperatura_c, 1) AS temperatura_tomorrow_c,
+    ROUND(om.temperatura_ecmwf_c, 1) AS temperatura_ecmwf_c,
+    ROUND(om.temperatura_gfs_c, 1) AS temperatura_gfs_c,
+    ROUND((COALESCE(om.temperatura_ecmwf_c, om.temperatura_gfs_c) + COALESCE(om.temperatura_gfs_c, om.temperatura_ecmwf_c)) / 2.0, 1) AS temperatura_consenso_c,
+
+    -- Probabilidade de Chuva (%)
+    tom.probabilidade_chuva_pct AS probabilidade_tomorrow_pct,
+    om.probabilidade_chuva_ecmwf_pct,
+    om.probabilidade_chuva_gfs_pct,
+    CAST(ROUND((COALESCE(om.probabilidade_chuva_ecmwf_pct, om.probabilidade_chuva_gfs_pct) + COALESCE(om.probabilidade_chuva_gfs_pct, om.probabilidade_chuva_ecmwf_pct)) / 2.0) AS INT64) AS probabilidade_consenso_pct,
+
+    -- Vento e Umidade
+    ROUND(COALESCE(om.vento_velocidade_ecmwf_kmh, om.vento_velocidade_gfs_kmh), 1) AS vento_velocidade_kmh,
+    ROUND(COALESCE(om.umidade_relativa_ecmwf_pct, om.umidade_relativa_gfs_pct), 1) AS umidade_relativa_pct,
+
+    CURRENT_TIMESTAMP() AS atualizado_em
+  FROM latest_open_meteo om
+  LEFT JOIN latest_tomorrow tom
+    ON (
+      CASE om.cidade
+        WHEN 'RECIFE' THEN 'RECIFE'
+        WHEN 'OLINDA' THEN 'RECIFE'
+        WHEN 'JABOATÃO DOS GUARARAPES' THEN 'RECIFE'
+        WHEN 'PAULISTA' THEN 'PAULISTA'
+        WHEN 'ABREU E LIMA' THEN 'PAULISTA'
+        WHEN 'IGARASSU' THEN 'PAULISTA'
+        WHEN 'ITAPISSUMA' THEN 'PAULISTA'
+        WHEN 'ILHA DE ITAMARACÁ' THEN 'PAULISTA'
+        WHEN 'ARAÇOIABA' THEN 'PAULISTA'
+        WHEN 'CABO DE SANTO AGOSTINHO' THEN 'CABO DE SANTO AGOSTINHO'
+        WHEN 'IPOJUCA' THEN 'CABO DE SANTO AGOSTINHO'
+        WHEN 'SÃO LOURENÇO DA MATA' THEN 'SÃO LOURENÇO DA MATA'
+        WHEN 'CAMARAGIBE' THEN 'SÃO LOURENÇO DA MATA'
+        WHEN 'MORENO' THEN 'SÃO LOURENÇO DA MATA'
+        ELSE om.cidade
+      END
+    ) = tom.cidade_base
+    AND om.data_hora_previsao = tom.data_hora_previsao
+)
+
+SELECT * FROM joined_forecast
+ORDER BY municipio_nome, data_hora_previsao
