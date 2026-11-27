@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: "nimbus_gold_prod",
-  tags: ["gold", "tempo_real", "cemaden"],
+  tags: ["gold", "tempo_real"],
   description: "Situação atual observada em tempo real por estação pluviométrica do CEMADEN em PE com 7 temporalidades e faixas INMET/OMM."
 }
 

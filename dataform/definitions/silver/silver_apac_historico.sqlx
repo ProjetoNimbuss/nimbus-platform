@@ -1,7 +1,8 @@
 config {
-  type: "table",
+  type: "incremental",
   schema: "nimbus_silver_prod",
   tags: ["silver", "apac", "historico"],
+  uniqueKey: ["codigo_posto", "data_medicao"],
   bigquery: {
     partitionBy: "DATE_TRUNC(data_medicao, MONTH)",
     clusterBy: ["codigo_posto", "posto_nome"]
@@ -9,7 +10,13 @@ config {
   description: "Série histórica da APAC (1961 até hoje) transformada de colunas de dias em grão diário relacional."
 }
 
-WITH bronze_unpivot AS (
+WITH bronze_filtrada AS (
+  SELECT *
+  FROM ${ref("apac_historico")}
+  ${when(incremental(), `WHERE SAFE_CAST(ano_ref AS INT64) >= EXTRACT(YEAR FROM CURRENT_DATE())`)}
+),
+
+bronze_unpivot AS (
   SELECT
     SAFE_CAST(codigo AS INT64) AS codigo_posto,
     TRIM(posto) AS posto_nome,
@@ -18,7 +25,7 @@ WITH bronze_unpivot AS (
     SAFE_CAST(ano_ref AS INT64) AS ano_ref,
     dia_str,
     chuva_valor
-  FROM ${ref("apac_historico")}
+  FROM bronze_filtrada
   UNPIVOT (
     chuva_valor FOR dia_str IN (
       dia_01, dia_02, dia_03, dia_04, dia_05, dia_06, dia_07, dia_08, dia_09, dia_10,
